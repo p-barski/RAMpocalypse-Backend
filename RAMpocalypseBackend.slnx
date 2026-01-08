@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RAMpocalypse.Server/RAMpocalypse.Server.csproj" />
+  </Folder>
+</Solution>
