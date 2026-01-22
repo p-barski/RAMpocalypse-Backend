@@ -4,7 +4,7 @@ using RAMpocalypse.Server.Game;
 
 namespace RAMpocalypse.Server.Hubs;
 
-public class GameHub(ILogger<GameHub> logger) : Hub
+public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
 {
     private readonly ILogger<GameHub> _logger = logger;
     private static readonly ConcurrentDictionary<string, Player> ConnectionToPlayerMap = [];
@@ -145,8 +145,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == player).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("PositionCorrected", validation.CorrectedPosition.X,
-                                                             validation.CorrectedPosition.Y, validation.Reason);
+                await Clients.Client(connectionId).PositionCorrected(validation.CorrectedPosition);
             }
 
             // Use corrected position
@@ -169,7 +168,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var otherConnectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == otherPlayer).Key;
             if (otherConnectionId != null)
             {
-                await Clients.Client(otherConnectionId).SendAsync("PlayerPositionUpdated", player.Id, player.Position.X, player.Position.Y);
+                await Clients.Client(otherConnectionId).PlayerPositionUpdated(player.Id, player.Position);
             }
         }
     }
@@ -215,7 +214,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var otherConnectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == otherPlayerId).Key;
             if (otherConnectionId != null)
             {
-                await Clients.Client(otherConnectionId).SendAsync("PlayerLeftLobby", player.Id);
+                await Clients.Client(otherConnectionId).PlayerLeftLobby(player.Id);
             }
         }
 
@@ -246,7 +245,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             _logger.LogInformation($"Sending lobby start to player {player.Id} (ConnectionId: {connectionId}) in lobby {lobby.Id}");
             try
             {
-                await Clients.Client(connectionId).SendAsync("LobbyStarted", lobby.Id, lobby.Players);
+                await Clients.Client(connectionId).LobbyStarted(lobby.Id, lobby.Players);
                 _logger.LogInformation($"Successfully sent lobby start to player {player.Id}");
             }
             catch (Exception ex)
@@ -272,7 +271,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
     public async Task SendMessage(string user, string message)
     {
         _logger.LogInformation($"SendMessage called - User: {user}, Message: {message}, ConnectionId: {Context.ConnectionId}");
-        await Clients.All.SendAsync("ReceiveMessage", user, message);
+        await Clients.All.ReceiveMessage(user, message);
     }
 
     public async Task PerformMeleeAttack(Position attackDirection)
@@ -340,8 +339,8 @@ public class GameHub(ILogger<GameHub> logger) : Hub
                 var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == hitPlayer).Key;
                 if (connectionId != null)
                 {
-                    await Clients.Client(connectionId).SendAsync("PlayerDamaged", hitPlayer.Id, MELEE_DAMAGE, hitPlayer.Health);
-                    await Clients.Client(Context.ConnectionId).SendAsync("PlayerDamaged", hitPlayer.Id, MELEE_DAMAGE, hitPlayer.Health);
+                    await Clients.Client(connectionId).PlayerDamaged(hitPlayer.Id, MELEE_DAMAGE, hitPlayer.Health);
+                    await Clients.Client(Context.ConnectionId).PlayerDamaged(hitPlayer.Id, MELEE_DAMAGE, hitPlayer.Health);
                 }
             }
         }
@@ -352,7 +351,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("AttackPerformed", player.Id, (int)AttackType.Melee, attackPosition, attackDirection);
+                await Clients.Client(connectionId).AttackPerformed(player.Id, AttackType.Melee, attackPosition, attackDirection);
             }
         }
     }
@@ -391,7 +390,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("AttackPerformed", player.Id, (int)AttackType.Projectile, player.Position, attackDirection);
+                await Clients.Client(connectionId).AttackPerformed(player.Id, AttackType.Projectile, player.Position, attackDirection);
             }
         }
     }
@@ -459,7 +458,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
                     var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
                     if (connectionId != null)
                     {
-                        await Clients.Client(connectionId).SendAsync("PlayerDamaged", hitPlayer.Id, SPECIAL_DAMAGE, hitPlayer.Health);
+                        await Clients.Client(connectionId).PlayerDamaged(hitPlayer.Id, SPECIAL_DAMAGE, hitPlayer.Health);
                     }
                 }
             }
@@ -471,7 +470,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("AttackPerformed", player.Id, (int)AttackType.Special, attackPosition, attackPosition);
+                await Clients.Client(connectionId).AttackPerformed(player.Id, AttackType.Special, attackPosition, attackPosition);
             }
         }
     }
@@ -515,7 +514,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == hitPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("PlayerDamaged", hitPlayer.Id, PROJECTILE_DAMAGE, hitPlayer.Health);
+                await Clients.Client(connectionId).PlayerDamaged(hitPlayer.Id, PROJECTILE_DAMAGE, hitPlayer.Health);
             }
         }
     }
@@ -538,7 +537,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("PlayerDied", deadPlayer.Id);
+                await Clients.Client(connectionId).PlayerDied(deadPlayer.Id);
             }
         }
 
@@ -555,7 +554,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
                 var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
                 if (connectionId != null)
                 {
-                    await Clients.Client(connectionId).SendAsync("GameEnded", winner.Id, lobby.Players);
+                    await Clients.Client(connectionId).GameEnded(winner.Id, lobby.Players);
                 }
             }
         }
@@ -595,7 +594,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub
             var connectionId = ConnectionToPlayerMap.FirstOrDefault(kvp => kvp.Value == lobbyPlayer).Key;
             if (connectionId != null)
             {
-                await Clients.Client(connectionId).SendAsync("PlayerRespawned", player.Id, respawnPosition.X, respawnPosition.Y);
+                await Clients.Client(connectionId).PlayerRespawned(player.Id, respawnPosition);
             }
         }
     }
