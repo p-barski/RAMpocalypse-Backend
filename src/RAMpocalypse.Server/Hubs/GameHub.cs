@@ -18,9 +18,9 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
     private const float PLAYER_HEIGHT = 32f; // Approximate player height in game world units
 
     // Attack constants
-    private const int MELEE_COOLDOWN_MS = 500; // 0.5 seconds
-    private const int PROJECTILE_COOLDOWN_MS = 1000; // 1 second
-    private const int SPECIAL_COOLDOWN_MS = 3000; // 3 seconds
+    private const int MELEE_COOLDOWN_MS = 50;
+    private const int PROJECTILE_COOLDOWN_MS = 100;
+    private const int SPECIAL_COOLDOWN_MS = 300;
     private const float MELEE_RANGE = 300f; // Melee attack range
     private const float PROJECTILE_SPEED = 800f; // Projectiles per second
     private const int MELEE_DAMAGE = 25;
@@ -305,6 +305,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
         // Calculate attack position (in front of player)
         var attackX = player.Position.X + (attackDirection.X * MELEE_RANGE);
         var attackY = player.Position.Y + (attackDirection.Y * MELEE_RANGE);
+        _logger.LogInformation($"Melee attack position - PlayerId: {player.Id},\n PlayerPosition: {player.Position.X}, {player.Position.Y} \n AttackX: {attackX}, AttackY: {attackY}");
         var attackPosition = new Position(attackX, attackY);
 
         // Check for hits on other players
