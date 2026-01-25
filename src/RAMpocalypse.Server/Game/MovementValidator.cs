@@ -9,9 +9,9 @@ public static class MovementValidator
     // Assuming updates every ~20ms, max distance = speed * time
     private const float MAX_DISTANCE_PER_UPDATE = MAX_MOVEMENT_SPEED * 0.05f; // 50ms buffer
 
-    public static ValidationResult ValidateMovement(Position oldPosition, Position newPosition, int gameWidth, int gameHeight, float entityWidth, float entityHeight, float timeSinceLastUpdate)
+    public static ValidationResult ValidateMovement(Player player, Position newPosition, int gameWidth, int gameHeight, float timeSinceLastUpdate)
     {
-        var distance = CalculateDistance(oldPosition, newPosition);
+        var distance = CalculateDistance(player.Position, newPosition);
         var maxAllowedDistance = MAX_DISTANCE_PER_UPDATE + (MAX_MOVEMENT_SPEED * timeSinceLastUpdate);
 
         // Check if movement is too far (teleportation detection)
@@ -20,14 +20,14 @@ public static class MovementValidator
             return new ValidationResult
             {
                 IsValid = false,
-                CorrectedPosition = oldPosition,
+                CorrectedPosition = player.Position,
                 Reason = $"Movement too far: {distance:F2} > {maxAllowedDistance:F2}"
             };
         }
 
         // Validate boundaries
-        var correctedX = Math.Max(0, Math.Min(newPosition.X, gameWidth - entityWidth));
-        var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameHeight - entityHeight));
+        var correctedX = Math.Max(0, Math.Min(newPosition.X, gameWidth - player.SpriteData.Width));
+        var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameHeight - player.SpriteData.Height));
 
         if (Math.Abs(correctedX - newPosition.X) > 0.1f || Math.Abs(correctedY - newPosition.Y) > 0.1f)
         {

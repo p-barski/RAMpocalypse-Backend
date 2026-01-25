@@ -14,9 +14,6 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
     private const MaxNumberOfPlayers LOBBY_SIZE = MaxNumberOfPlayers.Two;
     private const int GAME_WIDTH = 1920;
     private const int GAME_HEIGHT = 1080;
-    private const float PLAYER_WIDTH = 64f; // Approximate player width in game world units
-    private const float PLAYER_HEIGHT = 32f; // Approximate player height in game world units
-
     // Attack constants
     private const int MELEE_COOLDOWN_MS = 50;
     private const int PROJECTILE_COOLDOWN_MS = 100;
@@ -33,7 +30,8 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
         // Assign random sprite variant (1-4 for now, can be expanded)
         var random = new Random();
         var spriteVariant = random.Next(1, 5);
-        var player = new Player(GeneratePlayerId(), new Position(0, 0), spriteVariant);
+        var spriteData = new SpriteData($"http://localhost:5027/assets/sprites/player_{spriteVariant}.png");
+        var player = new Player(GeneratePlayerId(), spriteData);
         ConnectionToPlayerMap[Context.ConnectionId] = player;
 
         _logger.LogInformation($"Connect called - PlayerId: {player.Id}, ConnectionId: {Context.ConnectionId}");
@@ -127,12 +125,10 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
         // Validate movement
         var timeSinceLastUpdate = (float)(DateTime.UtcNow - player.LastPositionUpdateTime).TotalSeconds;
         var validation = MovementValidator.ValidateMovement(
-            player.Position,
+            player,
             newPosition,
             GAME_WIDTH,
             GAME_HEIGHT,
-            PLAYER_WIDTH,
-            PLAYER_HEIGHT,
             timeSinceLastUpdate);
 
         if (!validation.IsValid)
@@ -177,8 +173,7 @@ public class GameHub(ILogger<GameHub> logger) : Hub<ISendMethods>
     {
         if (!ConnectionToPlayerMap.TryGetValue(Context.ConnectionId, out var player))
         {
-            _logger.LogWarning("LeaveGame called but player not found - ConnectionId: {ConnectionId}",
-                Context.ConnectionId);
+            _logger.LogWarning($"LeaveGame called but player not found - ConnectionId: {Context.ConnectionId}");
             return;
         }
 
