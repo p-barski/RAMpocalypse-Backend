@@ -1,9 +1,9 @@
 namespace RAMpocalypse.Server.Game;
 
-public struct Position(float x, float y)
+public struct Position(double x, double y)
 {
-    public float X { get; set; } = x;
-    public float Y { get; set; } = y;
+    public double X { get; set; } = x;
+    public double Y { get; set; } = y;
     public static (Position corner1, Position corner2) GetRandomOppositeCorners(int gameWidth, int gameHeight)
     {
         var random = new Random();
@@ -12,10 +12,10 @@ public struct Position(float x, float y)
 
         var corners = new[]
         {
-            new Position(0f, 0f),                             // top-left
-            new Position(gameWidth - 100f, 0f),               // top-right
-            new Position(0f, gameHeight - 100f),              // bottom-left
-            new Position(gameWidth - 100f, gameHeight - 100f) // bottom-right
+            new Position(0.0, 0.0),                             // top-left
+            new Position(gameWidth - 100.0, 0.0),               // top-right
+            new Position(0.0, gameHeight - 100.0),              // bottom-left
+            new Position(gameWidth - 100.0, gameHeight - 100.0) // bottom-right
         };
 
         return (corners[cornerIndex], corners[oppositeIndex]);

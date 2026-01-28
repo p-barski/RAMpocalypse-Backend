@@ -10,9 +10,9 @@ public class GameConfig : IGameConfig
     public int MeleeCooldownMs { get; } = 50;
     public int ProjectileCooldownMs { get; } = 100;
     public int SpecialCooldownMs { get; } = 300;
-    public float MeleeRange { get; } = 300f;
+    public double MeleeRange { get; } = 300.0;
     public double SpecialAttackRange { get; } = 400;
-    public float ProjectileSpeed { get; } = 800f;
+    public double ProjectileSpeed { get; } = 800.0;
     public int MeleeDamage { get; } = 25;
     public int ProjectileDamage { get; } = 15;
     public int SpecialDamage { get; } = 40;

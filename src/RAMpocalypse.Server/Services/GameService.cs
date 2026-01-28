@@ -283,10 +283,10 @@ public class GameService(IGameConfig gameConfig) : IGameService
         };
     }
 
-    private static float CalculateDistance(float x1, float y1, float x2, float y2)
+    private static double CalculateDistance(double x1, double y1, double x2, double y2)
     {
         var dx = x2 - x1;
         var dy = y2 - y1;
-        return (float)Math.Sqrt(dx * dx + dy * dy);
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 }

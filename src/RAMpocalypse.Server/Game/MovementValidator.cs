@@ -3,11 +3,11 @@ namespace RAMpocalypse.Server.Game;
 public static class MovementValidator
 {
     // Maximum movement speed in pixels per second
-    private const double MAX_MOVEMENT_SPEED = 500f; // 5 pixels per frame * 60 fps = 300, but allow some buffer
+    private const double MAX_MOVEMENT_SPEED = 500.0; // 5 pixels per frame * 60 fps = 300, but allow some buffer
 
     // Maximum distance that can be traveled in a single update (with buffer for network lag)
     // Assuming updates every ~20ms, max distance = speed * time
-    private const double MAX_DISTANCE_PER_UPDATE = MAX_MOVEMENT_SPEED * 0.05f; // 50ms buffer
+    private const double MAX_DISTANCE_PER_UPDATE = MAX_MOVEMENT_SPEED * 0.05; // 50ms buffer
 
     public static ValidationResult ValidateMovement(Player player, Position newPosition, int gameWidth, int gameHeight, double timeSinceLastUpdate)
     {
@@ -29,7 +29,7 @@ public static class MovementValidator
         var correctedX = Math.Max(0, Math.Min(newPosition.X, gameWidth - player.SpriteData.Width));
         var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameHeight - player.SpriteData.Height));
 
-        if (Math.Abs(correctedX - newPosition.X) > 0.1f || Math.Abs(correctedY - newPosition.Y) > 0.1f)
+        if (Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1)
         {
             return new ValidationResult
             {

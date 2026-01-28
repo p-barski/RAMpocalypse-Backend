@@ -10,9 +10,9 @@ public interface IGameConfig
     int MeleeCooldownMs { get; }
     int ProjectileCooldownMs { get; }
     int SpecialCooldownMs { get; }
-    float MeleeRange { get; }
+    double MeleeRange { get; }
     double SpecialAttackRange { get; }
-    float ProjectileSpeed { get; }
+    double ProjectileSpeed { get; }
     int MeleeDamage { get; }
     int ProjectileDamage { get; }
     int SpecialDamage { get; }
