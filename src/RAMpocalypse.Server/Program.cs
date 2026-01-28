@@ -1,4 +1,5 @@
 using RAMpocalypse.Server.Hubs;
+using RAMpocalypse.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,13 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+builder.Services.AddSingleton<IGameConfig, GameConfig>();
+builder.Services.AddSingleton<IPlayerConnectionService, PlayerConnectionService>();
+builder.Services.AddSingleton<ILobbyManager, LobbyManager>();
+builder.Services.AddSingleton<IMatchmakingService, MatchmakingService>();
+builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddSingleton<IPlayerFactory, PlayerFactory>();
 
 var app = builder.Build();
 
