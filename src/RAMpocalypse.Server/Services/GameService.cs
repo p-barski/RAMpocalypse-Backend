@@ -12,7 +12,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var result = new PositionUpdateResult();
 
         // Validate movement
-        var timeSinceLastUpdate = (DateTime.UtcNow - player.LastPositionUpdateTime).TotalSeconds;
+        var updateTime = DateTime.UtcNow;
+        var timeSinceLastUpdate = (updateTime - player.LastPositionUpdateTime).TotalSeconds;
         var validation = MovementValidator.ValidateMovement(
             player,
             newPosition,
@@ -20,24 +21,15 @@ public class GameService(IGameConfig gameConfig) : IGameService
             gameConfig.GameHeight,
             timeSinceLastUpdate);
 
-        if (!validation.IsValid)
+        result.NeedsCorrection = !validation.IsValid;
+        result.CorrectedPosition = validation.CorrectedPosition;
+        player.Position = validation.CorrectedPosition;
+        if (validation.IsValid)
         {
-            // Invalid movement - needs correction, but don't notify other players
-            result.NeedsCorrection = true;
-            result.CorrectedPosition = validation.CorrectedPosition;
-            result.PlayersToNotify = [];
-            player.Position = validation.CorrectedPosition;
-        }
-        else
-        {
-            // Valid movement - update position and notify other players
-            result.NeedsCorrection = false;
-            result.CorrectedPosition = validation.CorrectedPosition;
-            player.Position = validation.CorrectedPosition;
             result.PlayersToNotify = lobby.Players.Where(p => p != player).ToList();
         }
 
-        player.LastPositionUpdateTime = DateTime.UtcNow;
+        player.LastPositionUpdateTime = updateTime;
 
         return result;
     }
@@ -51,22 +43,12 @@ public class GameService(IGameConfig gameConfig) : IGameService
             AttackDirection = attackDirection
         };
 
-        if (!attacker.IsAlive)
-        {
-            result.Success = false;
-            result.PlayersToNotify = [];
-            return result;
-        }
+        if (!attacker.IsAlive) return result;
 
         // Check cooldown
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastMeleeAttackTime).TotalMilliseconds;
-        if (timeSinceLastAttack < gameConfig.MeleeCooldownMs)
-        {
-            result.Success = false;
-            result.PlayersToNotify = [];
-            return result;
-        }
+        if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return result;
 
         attacker.LastMeleeAttackTime = attackTime;
 
@@ -80,27 +62,26 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
-            var distance = CalculateDistance(attackX, attackY, otherPlayer.Position.X, otherPlayer.Position.Y);
-            if (distance <= gameConfig.MeleeRange)
+            var distance = Position.CalculateDistance(attackPosition, otherPlayer.Position);
+            if (distance > gameConfig.MeleeRange) continue;
+
+            var oldHealth = otherPlayer.Health;
+            otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.MeleeDamage);
+            var died = otherPlayer.Health <= 0;
+
+            if (died)
             {
-                var oldHealth = otherPlayer.Health;
-                otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.MeleeDamage);
-                var died = otherPlayer.Health <= 0;
-
-                if (died)
-                {
-                    otherPlayer.IsAlive = false;
-                    otherPlayer.DeathTime = attackTime;
-                }
-
-                hitPlayerInfos.Add(new HitPlayerInfo
-                {
-                    Player = otherPlayer,
-                    Damage = oldHealth - otherPlayer.Health,
-                    NewHealth = otherPlayer.Health,
-                    Died = died
-                });
+                otherPlayer.IsAlive = false;
+                otherPlayer.DeathTime = attackTime;
             }
+
+            hitPlayerInfos.Add(new HitPlayerInfo
+            {
+                Player = otherPlayer,
+                Damage = oldHealth - otherPlayer.Health,
+                NewHealth = otherPlayer.Health,
+                Died = died
+            });
         }
 
         result.Success = true;
@@ -114,7 +95,6 @@ public class GameService(IGameConfig gameConfig) : IGameService
     {
         var result = new AttackResult
         {
-            Success = false,
             AttackerId = attacker.Id,
             AttackType = AttackType.Projectile,
             AttackDirection = attackDirection,
@@ -148,51 +128,39 @@ public class GameService(IGameConfig gameConfig) : IGameService
             AttackDirection = attackPosition
         };
 
-        if (!attacker.IsAlive)
-        {
-            result.Success = false;
-            result.PlayersToNotify = [];
-            return result;
-        }
+        if (!attacker.IsAlive) return result;
 
         // Check cooldown
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
-        if (timeSinceLastAttack < gameConfig.SpecialCooldownMs)
-        {
-            result.Success = false;
-            result.PlayersToNotify = [];
-            return result;
-        }
+        if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return result;
 
         attacker.LastSpecialAttackTime = attackTime;
 
         // Special attack is area-of-effect around the player
-        var specialRange = gameConfig.SpecialAttackRange;
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
-            var distance = CalculateDistance(attacker.Position.X, attacker.Position.Y, otherPlayer.Position.X, otherPlayer.Position.Y);
-            if (distance <= specialRange)
+            var distance = Position.CalculateDistance(attacker.Position, otherPlayer.Position);
+            if (distance > gameConfig.SpecialAttackRange) continue;
+
+            var oldHealth = otherPlayer.Health;
+            otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.SpecialDamage);
+            var died = otherPlayer.Health <= 0;
+
+            if (died)
             {
-                var oldHealth = otherPlayer.Health;
-                otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.SpecialDamage);
-                var died = otherPlayer.Health <= 0;
-
-                if (died)
-                {
-                    otherPlayer.IsAlive = false;
-                    otherPlayer.DeathTime = attackTime;
-                }
-
-                hitPlayerInfos.Add(new HitPlayerInfo
-                {
-                    Player = otherPlayer,
-                    Damage = oldHealth - otherPlayer.Health,
-                    NewHealth = otherPlayer.Health,
-                    Died = died
-                });
+                otherPlayer.IsAlive = false;
+                otherPlayer.DeathTime = attackTime;
             }
+
+            hitPlayerInfos.Add(new HitPlayerInfo
+            {
+                Player = otherPlayer,
+                Damage = oldHealth - otherPlayer.Health,
+                NewHealth = otherPlayer.Health,
+                Died = died
+            });
         }
 
         result.Success = true;
@@ -212,12 +180,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
             AttackDirection = hitPlayer.Position
         };
 
-        if (!hitPlayer.IsAlive)
-        {
-            result.Success = false;
-            result.PlayersToNotify = [];
-            return result;
-        }
+        if (!hitPlayer.IsAlive) return result;
 
         // Apply damage
         var oldHealth = hitPlayer.Health;
@@ -231,16 +194,13 @@ public class GameService(IGameConfig gameConfig) : IGameService
         }
 
         result.Success = true;
-        result.HitPlayers = new List<HitPlayerInfo>
+        result.HitPlayers = [new()
         {
-            new()
-            {
-                Player = hitPlayer,
-                Damage = oldHealth - hitPlayer.Health,
-                NewHealth = hitPlayer.Health,
-                Died = died
-            }
-        };
+            Player = hitPlayer,
+            Damage = oldHealth - hitPlayer.Health,
+            NewHealth = hitPlayer.Health,
+            Died = died
+        }];
         result.PlayersToNotify = lobby.Players;
 
         return result;
@@ -281,12 +241,5 @@ public class GameService(IGameConfig gameConfig) : IGameService
             RespawnPosition = respawnPosition,
             PlayersToNotify = lobby.Players.ToList()
         };
-    }
-
-    private static double CalculateDistance(double x1, double y1, double x2, double y2)
-    {
-        var dx = x2 - x1;
-        var dy = y2 - y1;
-        return Math.Sqrt(dx * dx + dy * dy);
     }
 }

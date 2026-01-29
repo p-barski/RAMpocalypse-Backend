@@ -4,6 +4,7 @@ public struct Position(double x, double y)
 {
     public double X { get; set; } = x;
     public double Y { get; set; } = y;
+
     public static (Position corner1, Position corner2) GetRandomOppositeCorners(int gameWidth, int gameHeight)
     {
         var random = new Random();
@@ -19,5 +20,12 @@ public struct Position(double x, double y)
         };
 
         return (corners[cornerIndex], corners[oppositeIndex]);
+    }
+
+    public static double CalculateDistance(Position p1, Position p2)
+    {
+        var dx = p2.X - p1.X;
+        var dy = p2.Y - p1.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 }

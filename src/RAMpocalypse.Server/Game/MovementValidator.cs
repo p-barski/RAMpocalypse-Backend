@@ -11,18 +11,15 @@ public static class MovementValidator
 
     public static ValidationResult ValidateMovement(Player player, Position newPosition, int gameWidth, int gameHeight, double timeSinceLastUpdate)
     {
-        var distance = CalculateDistance(player.Position, newPosition);
+        var result = new ValidationResult { CorrectedPosition = player.Position };
+        var distance = Position.CalculateDistance(player.Position, newPosition);
         var maxAllowedDistance = MAX_DISTANCE_PER_UPDATE + (MAX_MOVEMENT_SPEED * timeSinceLastUpdate);
 
         // Check if movement is too far (teleportation detection)
         if (distance > maxAllowedDistance)
         {
-            return new ValidationResult
-            {
-                IsValid = false,
-                CorrectedPosition = player.Position,
-                Reason = $"Movement too far: {distance:F2} > {maxAllowedDistance:F2}"
-            };
+            result.Reason = $"Movement too far: {distance:F2} > {maxAllowedDistance:F2}";
+            return result;
         }
 
         // Validate boundaries
@@ -31,27 +28,15 @@ public static class MovementValidator
 
         if (Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1)
         {
-            return new ValidationResult
-            {
-                IsValid = false,
-                CorrectedPosition = new Position(correctedX, correctedY),
-                Reason = "Position outside boundaries"
-            };
+            result.CorrectedPosition = new Position(correctedX, correctedY);
+            result.Reason = "Position outside boundaries";
+            return result;
         }
 
-        return new ValidationResult
-        {
-            IsValid = true,
-            CorrectedPosition = newPosition,
-            Reason = "Valid"
-        };
-    }
-
-    private static double CalculateDistance(Position pos1, Position pos2)
-    {
-        var dx = pos2.X - pos1.X;
-        var dy = pos2.Y - pos1.Y;
-        return Math.Sqrt(dx * dx + dy * dy);
+        result.IsValid = true;
+        result.CorrectedPosition = newPosition;
+        result.Reason = "Valid";
+        return result;
     }
 }
 
