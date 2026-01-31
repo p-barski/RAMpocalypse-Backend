@@ -9,28 +9,34 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby)
     {
-        var result = new PositionUpdateResult();
+        var result = new PositionUpdateResult() { CorrectedPosition = player.Position };
 
-        // Validate movement
         var updateTime = DateTime.UtcNow;
         var timeSinceLastUpdate = (updateTime - player.LastPositionUpdateTime).TotalSeconds;
-        var validation = MovementValidator.ValidateMovement(
-            player,
-            newPosition,
-            gameConfig.GameWidth,
-            gameConfig.GameHeight,
-            timeSinceLastUpdate);
+        player.LastPositionUpdateTime = updateTime;
+        var distance = Position.CalculateDistance(player.Position, newPosition);
+        var maxAllowedDistance = gameConfig.MaxDistancePerUpdate + (gameConfig.MaxMovementSpeed * timeSinceLastUpdate);
 
-        result.NeedsCorrection = !validation.IsValid;
-        result.CorrectedPosition = validation.CorrectedPosition;
-        player.Position = validation.CorrectedPosition;
-        if (validation.IsValid)
+        // Check if movement is too far (teleportation detection)
+        if (distance > maxAllowedDistance)
         {
-            result.PlayersToNotify = lobby.Players.Where(p => p != player).ToList();
+            // TODO: Move player to the closest valid position
+            result.NeedsCorrection = true;
+            return result;
         }
 
-        player.LastPositionUpdateTime = updateTime;
+        // Validate boundaries
+        var correctedX = Math.Max(0, Math.Min(newPosition.X, gameConfig.GameWidth - player.SpriteData.Width * player.SpriteData.ScaleFactor));
+        var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameConfig.GameHeight - player.SpriteData.Height * player.SpriteData.ScaleFactor));
 
+        result.CorrectedPosition = new Position(correctedX, correctedY);
+        result.NeedsCorrection = Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1;
+
+        if (player.Position != result.CorrectedPosition)
+        {
+            player.Position = result.CorrectedPosition;
+            result.PlayersToNotify = lobby.Players.Where(p => p != player).ToList();
+        }
         return result;
     }
 

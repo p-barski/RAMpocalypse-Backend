@@ -6,6 +6,8 @@ public class GameConfig : IGameConfig
 {
     public int GameWidth { get; } = 1920;
     public int GameHeight { get; } = 1080;
+    public double MaxMovementSpeed { get; } = 500.0;
+    public double MaxDistancePerUpdate { get; } = 25.0; // MaxMovementSpeed * 0.05 (50ms buffer)
     public MaxNumberOfPlayers LobbySize { get; } = MaxNumberOfPlayers.Two;
     public int MeleeCooldownMs { get; } = 50;
     public int ProjectileCooldownMs { get; } = 100;
