@@ -29,7 +29,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var correctedX = Math.Max(0, Math.Min(newPosition.X, gameConfig.GameWidth - player.SpriteData.Width * player.SpriteData.ScaleFactor));
         var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameConfig.GameHeight - player.SpriteData.Height * player.SpriteData.ScaleFactor));
 
-        result.CorrectedPosition = new Position(correctedX, correctedY);
+        result.CorrectedPosition = new Position(correctedX, correctedY, newPosition.Angle);
         result.NeedsCorrection = Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1;
 
         if (player.Position != result.CorrectedPosition)

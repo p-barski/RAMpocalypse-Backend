@@ -1,15 +1,17 @@
 namespace RAMpocalypse.Server.Game;
 
-public readonly struct Position(double x, double y)
+public readonly struct Position(double x, double y, double angle = 0)
 {
     public double X { get; init; } = x;
     public double Y { get; init; } = y;
+    public double Angle { get; init; } = angle;
 
-    public static bool operator ==(Position left, Position right) => left.X == right.X && left.Y == right.Y;
+    public static bool operator ==(Position left, Position right) =>
+        left.X == right.X && left.Y == right.Y && left.Angle == right.Angle;
     public static bool operator !=(Position left, Position right) => !(left == right);
 
     public override readonly bool Equals(object? obj) => obj is Position other && this == other;
-    public override readonly int GetHashCode() => HashCode.Combine(X, Y);
+    public override readonly int GetHashCode() => HashCode.Combine(X, Y, Angle);
 
     public static (Position corner1, Position corner2) GetRandomOppositeCorners(int gameWidth, int gameHeight)
     {
