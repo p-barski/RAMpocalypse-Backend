@@ -13,4 +13,14 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastProjectileAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
     public DateTime DeathTime { get; set; } = DateTime.MinValue;
+    public void ResetPlayerState()
+    {
+        Health = MaxHealth;
+        IsAlive = true;
+        LastPositionUpdateTime = DateTime.UtcNow;
+        LastMeleeAttackTime = DateTime.MinValue;
+        LastProjectileAttackTime = DateTime.MinValue;
+        LastSpecialAttackTime = DateTime.MinValue;
+        DeathTime = DateTime.MinValue;
+    }
 }

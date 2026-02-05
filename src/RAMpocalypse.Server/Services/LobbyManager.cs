@@ -23,42 +23,41 @@ public class LobbyManager(IGameConfig gameConfig) : ILobbyManager
     public GameLobby CreateLobby(Player player1, Player player2)
     {
         var lobby = new GameLobby(GenerateLobbyId(), gameConfig.LobbySize);
-
-        // Add players to lobby
         lobby.AddPlayer(player1);
         lobby.AddPlayer(player2);
-
-        // Map players to lobby
         playerToLobbyMap[player1] = lobby;
         playerToLobbyMap[player2] = lobby;
-
-        // Store lobby
         lobbies[lobby.Id] = lobby;
-
         return lobby;
     }
 
-    public GameLobby? RemovePlayerFromLobby(Player player)
+    public List<Player> RemovePlayerFromLobby(Player player)
     {
         if (!playerToLobbyMap.TryRemove(player, out var lobby))
         {
-            return null;
+            return [];
         }
-
         lobby.Players.Remove(player);
 
-        // Remove lobby if empty
-        if (lobby.Players.Count == 0)
+        // People can't join lobby that already started, so remove the lobby if there is only one player left
+        if (lobby.Players.Count == 1)
         {
+            foreach (var lobbyPlayer in lobby.Players)
+            {
+                playerToLobbyMap.TryRemove(lobbyPlayer, out _);
+            }
             lobbies.TryRemove(lobby.Id, out _);
-            return null;
         }
-
-        return lobby;
+        return lobby.Players;
     }
 
-    public List<Player> GetAllPlayersInLobby(GameLobby lobby)
+    public void RemoveLobby(GameLobby lobby)
     {
-        return lobby.Players.ToList();
+        foreach (var player in lobby.Players)
+        {
+            player.ResetPlayerState();
+            playerToLobbyMap.TryRemove(player, out _);
+        }
+        lobbies.TryRemove(lobby.Id, out _);
     }
 }

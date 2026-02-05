@@ -6,6 +6,6 @@ public interface ILobbyManager
 {
     GameLobby? GetLobbyByPlayer(Player player);
     GameLobby CreateLobby(Player player1, Player player2);
-    GameLobby? RemovePlayerFromLobby(Player player);
-    List<Player> GetAllPlayersInLobby(GameLobby lobby);
+    List<Player> RemovePlayerFromLobby(Player player);
+    void RemoveLobby(GameLobby lobby);
 }

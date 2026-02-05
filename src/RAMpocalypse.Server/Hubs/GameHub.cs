@@ -263,14 +263,11 @@ public class GameHub(
 
     private async Task RemovePlayerFromLobbyAsync(Player player)
     {
-        var lobby = lobbyManager.RemovePlayerFromLobby(player);
-        if (lobby is null)
+        player.ResetPlayerState();
+        var players = lobbyManager.RemovePlayerFromLobby(player);
+        foreach (var lobbyPlayer in players)
         {
-            return;
-        }
-
-        foreach (var lobbyPlayer in lobby.Players)
-        {
+            lobbyPlayer.ResetPlayerState();
             var connectionId = playerConnectionService.GetConnectionIdByPlayer(lobbyPlayer);
             if (connectionId is not null)
             {
@@ -315,7 +312,7 @@ public class GameHub(
     private async Task HandleAttackAsync(AttackResult result, GameLobby lobby)
     {
         if (!result.Success) return;
-
+        Player? winner = null;
         foreach (var player in result.PlayersToNotify)
         {
             var connectionId = playerConnectionService.GetConnectionIdByPlayer(player);
@@ -335,16 +332,20 @@ public class GameHub(
                 }
 
                 await Clients.Client(connectionId).PlayerDied(hit.Player.Id);
-                var winner = gameService.CheckWinCondition(lobby);
+                winner ??= gameService.CheckWinCondition(lobby);
                 if (winner is not null)
                 {
-                    await Clients.Client(connectionId).GameEnded(winner.Id, lobby.Players);
+                    await Clients.Client(connectionId).GameEnded(winner.Id);
                 }
                 else
                 {
                     _ = RespawnPlayerAsync(hit.Player, lobby);
                 }
             }
+        }
+        if (winner is not null)
+        {
+            lobbyManager.RemoveLobby(lobby);
         }
     }
 
