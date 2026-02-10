@@ -1,10 +1,19 @@
 namespace RAMpocalypse.Server.Game;
 
+public class SubEntity(Position position, SpriteData spriteData, string id)
+{
+    public Position Position { get; init; } = position;
+    public SpriteData SpriteData { get; init; } = spriteData;
+    public string Id { get; init; } = id;
+    public List<SubEntity> SubEntities { get; set; } = [];
+}
+
 public class Player(string id, SpriteData spriteData)
 {
     public string Id { get; init; } = id;
     public Position Position { get; set; } = new Position(0, 0);
     public SpriteData SpriteData { get; init; } = spriteData;
+    public List<SubEntity> SubEntities { get; set; } = [];
     public int Health { get; set; } = 100;
     public int MaxHealth { get; set; } = 100;
     public bool IsAlive { get; set; } = true;
