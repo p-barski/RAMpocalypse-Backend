@@ -58,18 +58,25 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
         attacker.LastMeleeAttackTime = attackTime;
 
-        // Calculate attack position (in front of player)
-        var attackX = attacker.Position.X + (attackDirection.X * gameConfig.MeleeRange);
-        var attackY = attacker.Position.Y + (attackDirection.Y * gameConfig.MeleeRange);
-        var attackPosition = new Position(attackX, attackY);
-        result.AttackPosition = attackPosition;
+        var attackPoint = new Position(attacker.Position.X + (attacker.SpriteData.Width * attacker.SpriteData.ScaleFactor / 2),
+            attacker.Position.Y + (attacker.SpriteData.Height * attacker.SpriteData.ScaleFactor / 2));
 
         // Check for hits on other players
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
-            var distance = Position.CalculateDistance(attackPosition, otherPlayer.Position);
-            if (distance > gameConfig.MeleeRange) continue;
+            var hitDetected = false;
+            foreach (var (corner1, corner2) in otherPlayer.GetHitboxLines())
+            {
+                var pointOnLine = Position.CalculateClosestPointOnLine(attackPoint, corner1, corner2);
+                if (Position.IsInsideHalfCircle(attackPoint, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
+                {
+                    hitDetected = true;
+                    result.AttackPosition = pointOnLine;
+                    break;
+                }
+            }
+            if (!hitDetected) continue;
 
             var oldHealth = otherPlayer.Health;
             otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.MeleeDamage);
