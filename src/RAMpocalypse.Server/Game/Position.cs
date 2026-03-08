@@ -18,19 +18,18 @@ public readonly struct Position(double x, double y, double angle = 0)
     public override readonly bool Equals(object? obj) => obj is Position other && this == other;
     public override readonly int GetHashCode() => HashCode.Combine(X, Y, Angle);
 
-    public static (Position corner1, Position corner2) GetRandomOppositeCorners(int gameWidth, int gameHeight)
+    public static (Position corner1, Position corner2) GetRandomOppositeCorners(int gameWidth, int gameHeight, int xOffset, int yOffset)
     {
         var random = new Random();
         var cornerIndex = random.Next(0, 4); // 0 = top-left, 1 = top-right, 2 = bottom-left, 3 = bottom-right
         int oppositeIndex = 3 - cornerIndex;
 
-        var corners = new[]
-        {
-            new Position(0.0, 0.0),                             // top-left
-            new Position(gameWidth - 100.0, 0.0),               // top-right
-            new Position(0.0, gameHeight - 100.0),              // bottom-left
-            new Position(gameWidth - 100.0, gameHeight - 100.0) // bottom-right
-        };
+        Position[] corners = [
+            new (xOffset, yOffset),                         // top-left
+            new (gameWidth - xOffset, yOffset),             // top-right
+            new (xOffset, gameHeight - yOffset),            // bottom-left
+            new (gameWidth - xOffset, gameHeight - yOffset) // bottom-right
+        ];
 
         return (corners[cornerIndex], corners[oppositeIndex]);
     }

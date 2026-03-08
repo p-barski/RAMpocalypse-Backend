@@ -32,13 +32,16 @@ public class Player(string id, SpriteData spriteData)
         LastSpecialAttackTime = DateTime.MinValue;
         DeathTime = DateTime.MinValue;
     }
-    public List<(Position, Position)> GetHitboxLines()
+    public (Position, Position)[] GetHitboxLines()
     {
-        List<Position> corners = [
-            this.Position,
-            new Position(this.Position.X + (this.SpriteData.Width * this.SpriteData.ScaleFactor), this.Position.Y),
-            new Position(this.Position.X + (this.SpriteData.Width * this.SpriteData.ScaleFactor), this.Position.Y + (this.SpriteData.Height * this.SpriteData.ScaleFactor)),
-            new Position(this.Position.X, this.Position.Y + (this.SpriteData.Height * this.SpriteData.ScaleFactor)),
+        //TODO this is not rotated
+        int halfWidth = this.SpriteData.Width * this.SpriteData.ScaleFactor / 2;
+        int halfHeight = this.SpriteData.Height * this.SpriteData.ScaleFactor / 2;
+        Position[] corners = [
+            new (this.Position.X - halfWidth, this.Position.Y - halfHeight),
+            new (this.Position.X + halfWidth, this.Position.Y - halfHeight),
+            new (this.Position.X + halfWidth, this.Position.Y + halfHeight),
+            new (this.Position.X - halfWidth, this.Position.Y + halfHeight),
         ];
         return [
             (corners[0], corners[1]),

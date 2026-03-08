@@ -14,20 +14,20 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var updateTime = DateTime.UtcNow;
         var timeSinceLastUpdate = (updateTime - player.LastPositionUpdateTime).TotalSeconds;
         player.LastPositionUpdateTime = updateTime;
-        var distance = Position.CalculateDistance(player.Position, newPosition);
+        var distanceSquared = Position.CalculateDistanceSquared(player.Position, newPosition);
         var maxAllowedDistance = gameConfig.MaxDistancePerUpdate + (gameConfig.MaxMovementSpeed * timeSinceLastUpdate);
 
-        // Check if movement is too far (teleportation detection)
-        if (distance > maxAllowedDistance)
+        if (distanceSquared > maxAllowedDistance * maxAllowedDistance)
         {
             // TODO: Move player to the closest valid position
             result.NeedsCorrection = true;
             return result;
         }
 
-        // Validate boundaries
-        var correctedX = Math.Max(0, Math.Min(newPosition.X, gameConfig.GameWidth - player.SpriteData.Width * player.SpriteData.ScaleFactor));
-        var correctedY = Math.Max(0, Math.Min(newPosition.Y, gameConfig.GameHeight - player.SpriteData.Height * player.SpriteData.ScaleFactor));
+        var halfWidth = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
+        var halfHeight = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
+        var correctedX = Math.Max(halfWidth, Math.Min(newPosition.X, gameConfig.GameWidth - halfWidth));
+        var correctedY = Math.Max(halfHeight, Math.Min(newPosition.Y, gameConfig.GameHeight - halfHeight));
 
         result.CorrectedPosition = new Position(correctedX, correctedY, newPosition.Angle);
         result.NeedsCorrection = Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1;
@@ -51,16 +51,11 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
         if (!attacker.IsAlive) return result;
 
-        // Check cooldown
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastMeleeAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return result;
 
         attacker.LastMeleeAttackTime = attackTime;
-
-        var attackPoint = new Position(attacker.Position.X + (attacker.SpriteData.Width * attacker.SpriteData.ScaleFactor / 2),
-            attacker.Position.Y + (attacker.SpriteData.Height * attacker.SpriteData.ScaleFactor / 2));
-
         // Check for hits on other players
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
@@ -68,8 +63,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
             var hitDetected = false;
             foreach (var (corner1, corner2) in otherPlayer.GetHitboxLines())
             {
-                var pointOnLine = Position.CalculateClosestPointOnLine(attackPoint, corner1, corner2);
-                if (Position.IsInsideHalfCircle(attackPoint, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
+                // TODO calculate distance from position of a weapon instead of player center
+                var pointOnLine = Position.CalculateClosestPointOnLine(attacker.Position, corner1, corner2);
+                if (Position.IsInsideHalfCircle(attacker.Position, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
                 {
                     hitDetected = true;
                     result.AttackPosition = pointOnLine;
@@ -241,8 +237,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
             };
         }
 
-        // Respawn at random corner
-        var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight);
+        int xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
+        int yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
+        var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
 
         player.Position = respawnPosition;
         player.Health = player.MaxHealth;

@@ -50,14 +50,13 @@ public class MatchmakingService(
             };
         }
 
-        // Match found - create lobby with both players
-        var lobby = lobbyManager.CreateLobby(player, otherPlayer);
-
-        // Initialize player positions at opposite corners
-        var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight);
+        // Dimensions should be the same for both players
+        int xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
+        int yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
+        var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
         player.Position = corner1;
         otherPlayer.Position = corner2;
-
+        var lobby = lobbyManager.CreateLobby(player, otherPlayer);
         return new MatchmakingResult
         {
             Lobby = lobby,
