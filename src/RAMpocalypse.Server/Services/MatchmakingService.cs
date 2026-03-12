@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using RAMpocalypse.Server.Game;
 using RAMpocalypse.Server.Services.Results;
 
@@ -9,14 +8,13 @@ public class MatchmakingService(
     ILobbyManager lobbyManager,
     IGameConfig gameConfig) : IMatchmakingService
 {
-    private readonly ConcurrentQueue<Player> waitingPlayers = [];
+    private readonly MatchmakingQueue playerQueue = new();
     private readonly IPlayerConnectionService playerConnectionService = playerConnectionService;
     private readonly ILobbyManager lobbyManager = lobbyManager;
     private readonly IGameConfig gameConfig = gameConfig;
 
     public MatchmakingResult RequestMatchmaking(Player player)
     {
-        // Check if player is already in a lobby (prevent duplicate requests)
         if (lobbyManager.GetLobbyByPlayer(player) != null)
         {
             return new MatchmakingResult
@@ -26,13 +24,12 @@ public class MatchmakingService(
             };
         }
 
-        // Try to find another waiting player
         Player? otherPlayer = null;
-        while (waitingPlayers.TryDequeue(out var waitingPlayer))
+        while (playerQueue.TryDequeue(out var waitingPlayer))
         {
             if (playerConnectionService.GetConnectionIdByPlayer(waitingPlayer) != null &&
                 lobbyManager.GetLobbyByPlayer(waitingPlayer) == null &&
-                waitingPlayer.Id != player.Id) // Ensure we're not matching with ourselves
+                waitingPlayer.Id != player.Id)
             {
                 otherPlayer = waitingPlayer;
                 break;
@@ -41,8 +38,7 @@ public class MatchmakingService(
 
         if (otherPlayer == null)
         {
-            // No match found - add to waiting queue
-            waitingPlayers.Enqueue(player);
+            playerQueue.Enqueue(player);
             return new MatchmakingResult
             {
                 Lobby = null,
@@ -50,7 +46,7 @@ public class MatchmakingService(
             };
         }
 
-        // Dimensions should be the same for both players
+        // Dimensions should be the same for both players, at least for now
         int xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
         int yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
         var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
@@ -66,9 +62,6 @@ public class MatchmakingService(
 
     public void CancelMatchmaking(Player player)
     {
-        // Remove player from queue if present
-        // Since ConcurrentQueue doesn't support removal, we'll need to rebuild the queue
-        // For now, we'll just let it be removed naturally when dequeued
-        // In a production system, you might want to use a different data structure
+        playerQueue.Remove(player);
     }
 }
