@@ -158,7 +158,7 @@ public class GameHub(
         await Clients.All.ReceiveMessage(message);
     }
 
-    public async Task PerformMeleeAttack(Position attackDirection)
+    public async Task PerformMeleeAttack()
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (player is null)
@@ -178,11 +178,11 @@ public class GameHub(
             return;
         }
 
-        var result = gameService.PerformMeleeAttack(player, attackDirection, lobby);
+        var result = gameService.PerformMeleeAttack(player, lobby);
         await HandleAttackAsync(result, lobby);
     }
 
-    public async Task PerformProjectileAttack(Position attackDirection)
+    public async Task PerformProjectileAttack()
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (player is null)
@@ -202,11 +202,11 @@ public class GameHub(
             return;
         }
 
-        var result = gameService.PerformProjectileAttack(player, attackDirection, lobby);
+        var result = gameService.PerformProjectileAttack(player, lobby);
         await HandleAttackAsync(result, lobby);
     }
 
-    public async Task PerformSpecialAttack(Position attackPosition)
+    public async Task PerformSpecialAttack()
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (player is null)
@@ -226,7 +226,7 @@ public class GameHub(
             return;
         }
 
-        var result = gameService.PerformSpecialAttack(player, attackPosition, lobby);
+        var result = gameService.PerformSpecialAttack(player, lobby);
         await HandleAttackAsync(result, lobby);
     }
 
@@ -333,8 +333,7 @@ public class GameHub(
             await Clients.Client(connectionId).AttackPerformed(
                 result.AttackerId,
                 result.AttackType,
-                result.AttackPosition,
-                result.AttackDirection);
+                result.AttackPositions);
             foreach (var hit in result.HitPlayers)
             {
                 if (!hit.Died)

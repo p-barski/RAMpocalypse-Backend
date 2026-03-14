@@ -6,9 +6,9 @@ namespace RAMpocalypse.Server.Services;
 public interface IGameService
 {
     PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby);
-    AttackResult PerformMeleeAttack(Player attacker, Position attackDirection, GameLobby lobby);
-    AttackResult PerformProjectileAttack(Player attacker, Position attackDirection, GameLobby lobby);
-    AttackResult PerformSpecialAttack(Player attacker, Position attackPosition, GameLobby lobby);
+    AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby);
+    AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby);
+    AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby);
     AttackResult HandleProjectileHit(Player projectileOwner, Player hitPlayer, GameLobby lobby);
     Player? CheckWinCondition(GameLobby lobby);
     RespawnResult RespawnPlayer(Player player, GameLobby lobby);

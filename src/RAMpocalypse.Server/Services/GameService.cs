@@ -40,13 +40,12 @@ public class GameService(IGameConfig gameConfig) : IGameService
         return result;
     }
 
-    public AttackResult PerformMeleeAttack(Player attacker, Position attackDirection, GameLobby lobby)
+    public AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby)
     {
         var result = new AttackResult
         {
             AttackerId = attacker.Id,
             AttackType = AttackType.Melee,
-            AttackDirection = attackDirection
         };
 
         if (!attacker.IsAlive) return result;
@@ -56,7 +55,6 @@ public class GameService(IGameConfig gameConfig) : IGameService
         if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return result;
 
         attacker.LastMeleeAttackTime = attackTime;
-        // Check for hits on other players
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
@@ -68,7 +66,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
                 if (Position.IsInsideHalfCircle(attacker.Position, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
                 {
                     hitDetected = true;
-                    result.AttackPosition = pointOnLine;
+                    //TODO this can result in more distant line to be stored, but whatever for now
+                    result.AttackPositions.Add(pointOnLine);
                     break;
                 }
             }
@@ -100,19 +99,17 @@ public class GameService(IGameConfig gameConfig) : IGameService
         return result;
     }
 
-    public AttackResult PerformProjectileAttack(Player attacker, Position attackDirection, GameLobby lobby)
+    public AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby)
     {
         var result = new AttackResult
         {
             AttackerId = attacker.Id,
             AttackType = AttackType.Projectile,
-            AttackDirection = attackDirection,
-            AttackPosition = attacker.Position,
+            AttackPositions = [attacker.Position]
         };
 
         if (!attacker.IsAlive) return result;
 
-        // Check cooldown
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastProjectileAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.ProjectileCooldownMs) return result;
@@ -127,19 +124,17 @@ public class GameService(IGameConfig gameConfig) : IGameService
         return result;
     }
 
-    public AttackResult PerformSpecialAttack(Player attacker, Position attackPosition, GameLobby lobby)
+    public AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby)
     {
         var result = new AttackResult
         {
             AttackerId = attacker.Id,
             AttackType = AttackType.Special,
-            AttackPosition = attackPosition,
-            AttackDirection = attackPosition
+            AttackPositions = [attacker.Position]
         };
 
         if (!attacker.IsAlive) return result;
 
-        // Check cooldown
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return result;
@@ -185,13 +180,11 @@ public class GameService(IGameConfig gameConfig) : IGameService
         {
             AttackerId = projectileOwner.Id,
             AttackType = AttackType.Projectile,
-            AttackPosition = hitPlayer.Position,
-            AttackDirection = hitPlayer.Position
+            AttackPositions = [hitPlayer.Position],
         };
 
         if (!hitPlayer.IsAlive) return result;
 
-        // Apply damage
         var oldHealth = hitPlayer.Health;
         hitPlayer.Health = Math.Max(0, hitPlayer.Health - gameConfig.ProjectileDamage);
         var died = hitPlayer.Health <= 0;
