@@ -34,14 +34,20 @@ public class Player(string id, SpriteData spriteData)
     }
     public (Position, Position)[] GetHitboxLines()
     {
-        //TODO this is not rotated
         int halfWidth = this.SpriteData.Width * this.SpriteData.ScaleFactor / 2;
         int halfHeight = this.SpriteData.Height * this.SpriteData.ScaleFactor / 2;
+        double sin = Math.Sin(this.Position.Angle);
+        double cos = Math.Cos(this.Position.Angle);
+        double dxSin = halfWidth * sin;
+        double dxCos = halfWidth * cos;
+        double dySin = halfHeight * sin;
+        double dyCos = halfHeight * cos;
+
         Position[] corners = [
-            new (this.Position.X - halfWidth, this.Position.Y - halfHeight),
-            new (this.Position.X + halfWidth, this.Position.Y - halfHeight),
-            new (this.Position.X + halfWidth, this.Position.Y + halfHeight),
-            new (this.Position.X - halfWidth, this.Position.Y + halfHeight),
+            new(this.Position.X - dxCos + dySin, this.Position.Y - dxSin - dyCos),
+            new(this.Position.X + dxCos + dySin, this.Position.Y + dxSin - dyCos),
+            new(this.Position.X + dxCos - dySin, this.Position.Y + dxSin + dyCos),
+            new(this.Position.X - dxCos - dySin, this.Position.Y - dxSin + dyCos),
         ];
         return [
             (corners[0], corners[1]),
