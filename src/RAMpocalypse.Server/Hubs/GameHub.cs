@@ -76,11 +76,17 @@ public class GameHub(
         }
 
         var lobby = lobbyManager.GetLobbyByPlayer(player);
-        if (lobby is null) return; // Player not in lobby, don't broadcast
+        if (lobby is null)
+        {
+            logger.LogWarning(
+                "UpdatePlayerPosition called but player is not in lobby - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return;
+        }
 
         var result = gameService.ValidateAndUpdatePosition(player, newPosition, lobby);
 
-        logger.LogInformation(
+        logger.LogDebug(
             "UpdatePlayerPosition called - PlayerId: {PlayerId}, X: {X}, Y: {Y}, LobbyId: {LobbyId}, NeedsCorrection: {NeedsCorrection}",
             player.Id,
             result.CorrectedPosition.X,
@@ -140,15 +146,16 @@ public class GameHub(
         await base.OnDisconnectedAsync(exception);
     }
 
-    public async Task SendMessage(string user, string message)
+    public async Task SendMessage(string message)
     {
+        //TODO, this is not used for now, also not every user should get a message, only those in lobby
+        //maybe global chat at some point
         logger.LogInformation(
-            "SendMessage called - User: {User}, Message: {Message}, ConnectionId: {ConnectionId}",
-            user,
+            "SendMessage called - Message: {Message}, ConnectionId: {ConnectionId}",
             message,
             Context.ConnectionId);
 
-        await Clients.All.ReceiveMessage(user, message);
+        await Clients.All.ReceiveMessage(message);
     }
 
     public async Task PerformMeleeAttack(Position attackDirection)
@@ -213,6 +220,9 @@ public class GameHub(
         var lobby = lobbyManager.GetLobbyByPlayer(player);
         if (lobby is null)
         {
+            logger.LogWarning(
+                "PerformSpecialAttack called but player is not in a lobby - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
             return;
         }
 
@@ -263,6 +273,8 @@ public class GameHub(
 
     private async Task RemovePlayerFromLobbyAsync(Player player)
     {
+        //In case LeaveGame was called when player was not in lobby, or when disconnecting
+        matchmakingService.CancelMatchmaking(player);
         player.ResetPlayerState();
         var players = lobbyManager.RemovePlayerFromLobby(player);
         foreach (var lobbyPlayer in players)

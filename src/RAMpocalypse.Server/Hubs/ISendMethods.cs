@@ -11,5 +11,5 @@ public interface ISendMethods
     Task PlayerRespawned(string playerId, Position position);
     Task PlayerLeftLobby(string playerId);
     Task GameEnded(string winnerId);
-    Task ReceiveMessage(string user, string message);
+    Task ReceiveMessage(string message);
 }
