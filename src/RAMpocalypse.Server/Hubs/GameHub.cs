@@ -230,21 +230,13 @@ public class GameHub(
         await HandleAttackAsync(result, lobby);
     }
 
-    public async Task ProjectileHitPlayer(string projectileOwnerId, string hitPlayerId)
+    public async Task ProjectileHitPlayer(string projectileId, string hitPlayerId)
     {
         var projectileOwner = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (projectileOwner is null)
         {
             logger.LogWarning(
                 "ProjectileHitPlayer called but projectile owner not found - ConnectionId: {ConnectionId}",
-                Context.ConnectionId);
-            return;
-        }
-
-        if (projectileOwner.Id != projectileOwnerId)
-        {
-            logger.LogWarning(
-                "ProjectileHitPlayer called but projectile owner ID does not match - ConnectionId: {ConnectionId}",
                 Context.ConnectionId);
             return;
         }
@@ -267,7 +259,7 @@ public class GameHub(
             return;
         }
 
-        var result = gameService.HandleProjectileHit(projectileOwner, hitPlayer, lobby);
+        var result = gameService.HandleProjectileHit(projectileId, hitPlayer, lobby);
         await HandleAttackAsync(result, lobby);
     }
 
@@ -330,10 +322,7 @@ public class GameHub(
             var connectionId = playerConnectionService.GetConnectionIdByPlayer(player);
             if (connectionId is null) continue;
 
-            await Clients.Client(connectionId).AttackPerformed(
-                result.AttackerId,
-                result.AttackType,
-                result.AttackPositions);
+            await Clients.Client(connectionId).AttackPerformed(result.AttackEntites);
             foreach (var hit in result.HitPlayers)
             {
                 if (!hit.Died)

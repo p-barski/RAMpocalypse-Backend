@@ -42,17 +42,24 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby)
     {
-        var result = new AttackResult
-        {
-            AttackerId = attacker.Id,
-            AttackType = AttackType.Melee,
-        };
-
-        if (!attacker.IsAlive) return result;
+        if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastMeleeAttackTime).TotalMilliseconds;
-        if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return result;
+        if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return new AttackResult();
+
+        var result = new AttackResult
+        {
+            AttackEntites = [new AttackEntity
+            {
+                OwnerId = attacker.Id,
+                Type = AttackType.Melee,
+                CurrentPosition = new Position(-500, -500),
+                VelocityVector = new Position(0, 0, 0),
+                Lifetime = 0,
+                CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
+            }]
+        };
 
         attacker.LastMeleeAttackTime = attackTime;
         var hitPlayerInfos = new List<HitPlayerInfo>();
@@ -67,7 +74,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
                 {
                     hitDetected = true;
                     //TODO this can result in more distant line to be stored, but whatever for now
-                    result.AttackPositions.Add(pointOnLine);
+                    result.AttackEntites[0].CurrentPosition = pointOnLine;
+                    result.AttackEntites[0].Lifetime = gameConfig.MeleeLifetime;
                     break;
                 }
             }
@@ -90,6 +98,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
                 NewHealth = otherPlayer.Health,
                 Died = died
             });
+            break; // only 1 player should be hit
         }
 
         result.Success = true;
@@ -101,43 +110,53 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby)
     {
-        var result = new AttackResult
-        {
-            AttackerId = attacker.Id,
-            AttackType = AttackType.Projectile,
-            AttackPositions = [attacker.Position]
-        };
-
-        if (!attacker.IsAlive) return result;
+        if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastProjectileAttackTime).TotalMilliseconds;
-        if (timeSinceLastAttack < gameConfig.ProjectileCooldownMs) return result;
+        if (timeSinceLastAttack < gameConfig.ProjectileCooldownMs) return new AttackResult();
 
         attacker.LastProjectileAttackTime = attackTime;
 
-        // Projectile attacks are handled client-side, so we just broadcast the attack
-        result.Success = true;
-        result.HitPlayers = [];
-        result.PlayersToNotify = lobby.Players;
-
+        var velocityVector = new Position(Math.Sin(attacker.Position.Angle) * gameConfig.ProjectileSpeed,
+            -Math.Cos(attacker.Position.Angle) * gameConfig.ProjectileSpeed);
+        var attackEntity = new AttackEntity
+        {
+            OwnerId = attacker.Id,
+            Type = AttackType.Projectile,
+            CurrentPosition = attacker.Position,
+            VelocityVector = velocityVector,
+            Lifetime = gameConfig.ProjectileLifetime,
+            CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
+        };
+        var result = new AttackResult()
+        {
+            Success = true,
+            AttackEntites = [attackEntity],
+            PlayersToNotify = lobby.Players,
+        };
         return result;
     }
 
     public AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby)
     {
-        var result = new AttackResult
-        {
-            AttackerId = attacker.Id,
-            AttackType = AttackType.Special,
-            AttackPositions = [attacker.Position]
-        };
-
-        if (!attacker.IsAlive) return result;
+        if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
-        if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return result;
+        if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return new AttackResult();
+
+        var result = new AttackResult
+        {
+            AttackEntites = [new AttackEntity {
+                OwnerId = attacker.Id,
+                Type = AttackType.Special,
+                CurrentPosition = attacker.Position,
+                VelocityVector = new Position(0, 0),
+                Lifetime = gameConfig.ProjectileLifetime,
+                CreationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            }]
+        };
 
         attacker.LastSpecialAttackTime = attackTime;
 
@@ -145,8 +164,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
-            var distance = Position.CalculateDistance(attacker.Position, otherPlayer.Position);
-            if (distance > gameConfig.SpecialAttackRange) continue;
+            var distance = Position.CalculateDistanceSquared(attacker.Position, otherPlayer.Position);
+            if (distance > gameConfig.SpecialAttackRange * gameConfig.SpecialAttackRange) continue;
 
             var oldHealth = otherPlayer.Health;
             otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.SpecialDamage);
@@ -174,16 +193,17 @@ public class GameService(IGameConfig gameConfig) : IGameService
         return result;
     }
 
-    public AttackResult HandleProjectileHit(Player projectileOwner, Player hitPlayer, GameLobby lobby)
+    public AttackResult HandleProjectileHit(string attackId, Player hitPlayer, GameLobby lobby)
     {
+        if (!hitPlayer.IsAlive) return new AttackResult();
+
         var result = new AttackResult
         {
-            AttackerId = projectileOwner.Id,
-            AttackType = AttackType.Projectile,
-            AttackPositions = [hitPlayer.Position],
+            AttackEntites = [new AttackEntity {
+                Id = attackId,
+                Type = AttackType.ProjectileHit,
+            }]
         };
-
-        if (!hitPlayer.IsAlive) return result;
 
         var oldHealth = hitPlayer.Health;
         hitPlayer.Health = Math.Max(0, hitPlayer.Health - gameConfig.ProjectileDamage);

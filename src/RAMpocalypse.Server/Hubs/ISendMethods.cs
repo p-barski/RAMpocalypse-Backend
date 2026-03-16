@@ -3,7 +3,7 @@ using RAMpocalypse.Server.Game;
 public interface ISendMethods
 {
     Task PlayerDamaged(string playerId, int damage, int health);
-    Task AttackPerformed(string playerId, AttackType attackType, List<Position> attackPositions);
+    Task AttackPerformed(List<AttackEntity> attackEntities);
     Task PlayerPositionUpdated(string playerId, Position position);
     Task PositionCorrected(Position correctedPosition);
     Task LobbyStarted(string lobbyId, List<Player> players);

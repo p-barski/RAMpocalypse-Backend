@@ -15,6 +15,9 @@ public interface IGameConfig
     double MeleeRange { get; }
     double SpecialAttackRange { get; }
     double ProjectileSpeed { get; }
+    int MeleeLifetime { get; }
+    int ProjectileLifetime { get; }
+    int SpecialLifetime { get; }
     int MeleeDamage { get; }
     int ProjectileDamage { get; }
     int SpecialDamage { get; }

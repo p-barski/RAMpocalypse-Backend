@@ -5,9 +5,7 @@ namespace RAMpocalypse.Server.Services.Results;
 public class AttackResult
 {
     public bool Success { get; set; }
-    public string AttackerId { get; set; } = string.Empty;
-    public AttackType AttackType { get; set; }
     public List<HitPlayerInfo> HitPlayers { get; set; } = [];
-    public List<Position> AttackPositions { get; set; } = [];
+    public List<AttackEntity> AttackEntites { get; set; } = [];
     public List<Player> PlayersToNotify { get; set; } = [];
 }
