@@ -4,7 +4,7 @@ using RAMpocalypse.Server.Services;
 var builder = WebApplication.CreateBuilder(args);
 var origin = "http://localhost:5173";
 
-builder.Services.AddSignalR();
+builder.Configuration.AddJsonFile("gameconfig.json", optional: false, reloadOnChange: true);
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -14,16 +14,17 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
-});
-
-builder.Services.AddSingleton<IGameConfig, GameConfig>();
-builder.Services.AddSingleton<IPlayerConnectionService, PlayerConnectionService>();
-builder.Services.AddSingleton<ILobbyManager, LobbyManager>();
-builder.Services.AddSingleton<IMatchmakingService, MatchmakingService>();
-builder.Services.AddSingleton<IGameService, GameService>();
-builder.Services.AddSingleton<IPlayerFactory, PlayerFactory>();
+}).Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
+  .AddSingleton<IGameConfig, ReloadableGameConfig>()
+  .AddSingleton<IPlayerConnectionService, PlayerConnectionService>()
+  .AddSingleton<ILobbyManager, LobbyManager>()
+  .AddSingleton<IMatchmakingService, MatchmakingService>()
+  .AddSingleton<IGameService, GameService>()
+  .AddSingleton<IPlayerFactory, PlayerFactory>()
+  .AddSignalR();
 
 var app = builder.Build();
+
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -34,8 +35,8 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers.Append("Expires", "0");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
     }
-});
-app.UseCors();
+}).UseCors();
+
 app.MapGet("/", () => "RAMpocalypse Server is running!");
 app.MapHub<GameHub>("/gamehub");
 
