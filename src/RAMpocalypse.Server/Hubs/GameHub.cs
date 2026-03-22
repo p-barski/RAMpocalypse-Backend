@@ -22,13 +22,21 @@ public class GameHub(
     private readonly IPlayerFactory playerFactory = playerFactory;
     private readonly IGameConfig gameConfig = gameConfig;
 
-    public Task<string> Connect()
+    public Task<string> GetPlayerId()
     {
-        var player = playerFactory.CreatePlayer(Context.ConnectionId);
+        var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (player is not null)
+        {
+            logger.LogWarning(
+                "GetPlayerId: player already assigned to connection. PlayerId: {PlayerId}, ConnectionId: {ConnectionId}",
+                player.Id, Context.ConnectionId);
+            return Task.FromResult(player.Id);
+        }
+        player = playerFactory.CreatePlayer(Context.ConnectionId);
         playerConnectionService.AddPlayer(Context.ConnectionId, player);
 
         logger.LogInformation(
-            "Connect called - PlayerId: {PlayerId}, ConnectionId: {ConnectionId}",
+            "GetPlayerId called - PlayerId: {PlayerId}, ConnectionId: {ConnectionId}",
             player.Id, Context.ConnectionId);
 
         return Task.FromResult(player.Id);
