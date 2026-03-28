@@ -1,4 +1,5 @@
 using RAMpocalypse.Server.Game;
+using RAMpocalypse.Server.Services;
 
 public interface ISendMethods
 {
@@ -11,5 +12,5 @@ public interface ISendMethods
     Task PlayerRespawned(string playerId, Position position);
     Task PlayerLeftLobby(string playerId);
     Task GameEnded(string winnerId);
-    Task ReceiveMessage(string message);
+    Task MessageReceived(ChatMessage message);
 }

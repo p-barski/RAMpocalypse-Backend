@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using RAMpocalypse.Server.Database;
 using RAMpocalypse.Server.Hubs;
 using RAMpocalypse.Server.Services;
 
@@ -15,6 +17,15 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 }).Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
+  // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
+  // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
+  .Configure<MongoDbConfig>(builder.Configuration.GetSection("MongoDB"))
+  .AddSingleton<IDatabase>(sp =>
+  {
+      var db = new MongoDb(sp.GetRequiredService<IOptions<MongoDbConfig>>().Value);
+      _ = db.FillGlobalChatHistoryCache();
+      return db;
+  })
   .AddSingleton<IGameConfig, ReloadableGameConfig>()
   .AddSingleton<IPlayerConnectionService, PlayerConnectionService>()
   .AddSingleton<ILobbyManager, LobbyManager>()
@@ -23,8 +34,8 @@ builder.Services.AddCors(options =>
   .AddSingleton<IPlayerFactory, PlayerFactory>()
   .AddSignalR();
 
+builder.Services.AddControllers();
 var app = builder.Build();
-
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -39,5 +50,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.MapGet("/", () => "RAMpocalypse Server is running!");
 app.MapHub<GameHub>("/gamehub");
+app.MapControllers();
 
 app.Run();

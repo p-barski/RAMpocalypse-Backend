@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using RAMpocalypse.Server.Database;
 using RAMpocalypse.Server.Game;
 using RAMpocalypse.Server.Services;
 using RAMpocalypse.Server.Services.Results;
@@ -12,7 +13,8 @@ public class GameHub(
     ILobbyManager lobbyManager,
     IGameService gameService,
     IPlayerFactory playerFactory,
-    IGameConfig gameConfig) : Hub<ISendMethods>
+    IGameConfig gameConfig,
+    IDatabase database) : Hub<ISendMethods>
 {
     private readonly ILogger<GameHub> logger = logger;
     private readonly IPlayerConnectionService playerConnectionService = playerConnectionService;
@@ -21,6 +23,7 @@ public class GameHub(
     private readonly IGameService gameService = gameService;
     private readonly IPlayerFactory playerFactory = playerFactory;
     private readonly IGameConfig gameConfig = gameConfig;
+    private readonly IDatabase database = database;
 
     public Task<string> GetPlayerId()
     {
@@ -154,16 +157,50 @@ public class GameHub(
         await base.OnDisconnectedAsync(exception);
     }
 
-    public async Task SendMessage(string message)
+    public async Task SendMessage(string message, ChatMessageType type)
     {
-        //TODO, this is not used for now, also not every user should get a message, only those in lobby
-        //maybe global chat at some point
         logger.LogInformation(
-            "SendMessage called - Message: {Message}, ConnectionId: {ConnectionId}",
-            message,
-            Context.ConnectionId);
+            "SendMessage called - Message: {Message}, Type: {Type}, ConnectionId: {ConnectionId}",
+            message, type, Context.ConnectionId);
+        var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (player is null)
+        {
+            logger.LogWarning("SendMessage called, but player not found  - ConnectionId: {ConnectionId}", Context.ConnectionId);
+            return;
+        }
 
-        await Clients.All.ReceiveMessage(message);
+        var textMessage = new ChatMessage()
+        {
+            Id = $"msg_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}",
+            Text = message,
+            Type = type,
+            OwnerId = player.Id,
+            OwnerName = player.Id.Substring(player.Id.Length - 10, 10),
+            Timestamp = DateTime.UtcNow,
+        };
+
+        if (type == ChatMessageType.Global)
+        {
+            _ = database.SaveTextMessage(textMessage);
+            await Clients.All.MessageReceived(textMessage);
+            return;
+        }
+
+        var lobby = lobbyManager.GetLobbyByPlayer(player);
+        if (lobby is null)
+        {
+            logger.LogWarning(
+                "SendMessage to lobby called, but player is not in a lobby - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return;
+        }
+        _ = database.SaveTextMessage(textMessage);
+        foreach (var p in lobby.Players)
+        {
+            var connection = playerConnectionService.GetConnectionIdByPlayer(p);
+            if (connection is not null)
+                await Clients.Client(connection).MessageReceived(textMessage);
+        }
     }
 
     public async Task PerformMeleeAttack()
@@ -276,6 +313,7 @@ public class GameHub(
         //In case LeaveGame was called when player was not in lobby, or when disconnecting
         matchmakingService.CancelMatchmaking(player);
         player.ResetPlayerState();
+        var lobby = lobbyManager.GetLobbyByPlayer(player);
         var players = lobbyManager.RemovePlayerFromLobby(player);
         foreach (var lobbyPlayer in players)
         {
@@ -285,6 +323,10 @@ public class GameHub(
             {
                 await Clients.Client(connectionId).PlayerLeftLobby(player.Id);
             }
+        }
+        if (lobby?.Players.Count <= 1)
+        {
+            _ = database.SaveLobbyResult(new LobbyResult(lobby));
         }
     }
 
@@ -353,6 +395,7 @@ public class GameHub(
         }
         if (winner is not null)
         {
+            _ = database.SaveLobbyResult(new LobbyResult(lobby, winner.Id));
             lobbyManager.RemoveLobby(lobby);
         }
     }

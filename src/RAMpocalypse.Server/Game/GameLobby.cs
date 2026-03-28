@@ -5,6 +5,7 @@ public class GameLobby(string id, MaxNumberOfPlayers maxNumberOfPlayers)
     public string Id { get; init; } = id;
     public List<Player> Players { get; init; } = [];
     public MaxNumberOfPlayers MaxNumberOfPlayers { get; init; } = maxNumberOfPlayers;
+    public DateTime CreationTime { get; init; } = DateTime.UtcNow;
 
     public void AddPlayer(Player player)
     {
