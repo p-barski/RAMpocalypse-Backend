@@ -17,6 +17,7 @@
     "MeleeDamage": 1,
     "ProjectileDamage": 1,
     "SpecialDamage": 1,
-    "RespawnCooldownMs": 3000
+    "RespawnCooldownMs": 3000,
+    "MaxMessageLength": 100
   }
 }

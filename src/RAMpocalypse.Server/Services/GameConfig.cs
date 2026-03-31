@@ -22,4 +22,5 @@ public class GameConfig : IGameConfig
     public int ProjectileDamage { get; set; } = 15;
     public int SpecialDamage { get; set; } = 40;
     public int RespawnCooldownMs { get; set; } = 3000;
+    public int MaxMessageLength { get; set; } = 100;
 }

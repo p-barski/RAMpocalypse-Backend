@@ -42,4 +42,5 @@ public class ReloadableGameConfig(IOptionsMonitor<GameConfig> monitor) : IGameCo
     public int SpecialDamage => monitor.CurrentValue.SpecialDamage;
 
     public int RespawnCooldownMs => monitor.CurrentValue.RespawnCooldownMs;
+    public int MaxMessageLength => monitor.CurrentValue.MaxMessageLength;
 }

@@ -159,6 +159,22 @@ public class GameHub(
 
     public async Task SendMessage(string message, ChatMessageType type)
     {
+        if (message.Length > gameConfig.MaxMessageLength)
+        {
+            logger.LogWarning(
+                "SendMessage called with message of length {MessageLength} which is greater than " +
+                "the maximum length: {MaxMessageLength} - ConnectionId: {ConnectionId}",
+                message.Length, gameConfig.MaxMessageLength, Context.ConnectionId);
+            return;
+        }
+        message = message.Trim();
+        if (message.Length == 0)
+        {
+            logger.LogWarning(
+                "SendMessage called with empty message - ConnectionId: {ConnectionId}", Context.ConnectionId);
+            return;
+        }
+
         logger.LogInformation(
             "SendMessage called - Message: {Message}, Type: {Type}, ConnectionId: {ConnectionId}",
             message, type, Context.ConnectionId);
@@ -175,7 +191,7 @@ public class GameHub(
             Text = message,
             Type = type,
             OwnerId = player.Id,
-            OwnerName = player.Id.Substring(player.Id.Length - 10, 10),
+            OwnerName = player.Id[^10..],
             Timestamp = DateTime.UtcNow,
         };
 
