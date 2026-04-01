@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using RAMpocalypse.Server.Database;
 using RAMpocalypse.Server.Hubs;
@@ -16,6 +18,16 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
+}).AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("api", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromSeconds(30);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 }).Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
   // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
   // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
@@ -46,10 +58,10 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers.Append("Expires", "0");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
     }
-}).UseCors();
+}).UseCors().UseRateLimiter();
 
 app.MapGet("/", () => "RAMpocalypse Server is running!");
 app.MapHub<GameHub>("/gamehub");
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("api");
 
 app.Run();
