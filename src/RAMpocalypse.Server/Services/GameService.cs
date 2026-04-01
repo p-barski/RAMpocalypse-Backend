@@ -62,15 +62,15 @@ public class GameService(IGameConfig gameConfig) : IGameService
         };
 
         attacker.LastMeleeAttackTime = attackTime;
+        var attackPosition = attacker.GetAttackPosition();
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
             var hitDetected = false;
             foreach (var (corner1, corner2) in otherPlayer.GetHitboxLines())
             {
-                // TODO calculate distance from position of a weapon instead of player center
-                var pointOnLine = Position.CalculateClosestPointOnLine(attacker.Position, corner1, corner2);
-                if (Position.IsInsideHalfCircle(attacker.Position, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
+                var pointOnLine = Position.CalculateClosestPointOnLine(attackPosition, corner1, corner2);
+                if (Position.IsInsideHalfCircle(attackPosition, pointOnLine, gameConfig.MeleeRange, attacker.Position.Angle))
                 {
                     hitDetected = true;
                     //TODO this can result in more distant line to be stored, but whatever for now
@@ -118,13 +118,14 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
         attacker.LastProjectileAttackTime = attackTime;
 
-        var velocityVector = new Position(Math.Sin(attacker.Position.Angle) * gameConfig.ProjectileSpeed,
-            -Math.Cos(attacker.Position.Angle) * gameConfig.ProjectileSpeed);
+        double sin = Math.Sin(attacker.Position.Angle);
+        double cos = Math.Cos(attacker.Position.Angle);
+        var velocityVector = new Position(sin * gameConfig.ProjectileSpeed, -cos * gameConfig.ProjectileSpeed);
         var attackEntity = new AttackEntity
         {
             OwnerId = attacker.Id,
             Type = AttackType.Projectile,
-            CurrentPosition = attacker.Position,
+            CurrentPosition = attacker.GetAttackPosition(sin, cos),
             VelocityVector = velocityVector,
             Lifetime = gameConfig.ProjectileLifetime,
             CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
@@ -146,12 +147,13 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return new AttackResult();
 
+        var attackPosition = attacker.GetAttackPosition();
         var result = new AttackResult
         {
             AttackEntites = [new AttackEntity {
                 OwnerId = attacker.Id,
                 Type = AttackType.Special,
-                CurrentPosition = attacker.Position,
+                CurrentPosition = attackPosition,
                 VelocityVector = new Position(0, 0),
                 Lifetime = gameConfig.ProjectileLifetime,
                 CreationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -162,10 +164,11 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
         // Special attack is area-of-effect around the player
         var hitPlayerInfos = new List<HitPlayerInfo>();
+        var rangeSquared = gameConfig.SpecialAttackRange * gameConfig.SpecialAttackRange;
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
         {
-            var distance = Position.CalculateDistanceSquared(attacker.Position, otherPlayer.Position);
-            if (distance > gameConfig.SpecialAttackRange * gameConfig.SpecialAttackRange) continue;
+            var distance = Position.CalculateDistanceSquared(attackPosition, otherPlayer.Position);
+            if (distance > rangeSquared) continue;
 
             var oldHealth = otherPlayer.Health;
             otherPlayer.Health = Math.Max(0, otherPlayer.Health - gameConfig.SpecialDamage);

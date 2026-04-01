@@ -56,4 +56,16 @@ public class Player(string id, SpriteData spriteData)
             (corners[3], corners[0]),
         ];
     }
+    public Position GetAttackPosition(double? sin = null, double? cos = null)
+    {
+        sin ??= Math.Sin(this.Position.Angle);
+        cos ??= Math.Cos(this.Position.Angle);
+        var weapon = SubEntities[0];
+        double yOffset = weapon.Position.Y - weapon.SpriteData.Height * weapon.SpriteData.ScaleFactor / 2;
+        double rotatedX = weapon.Position.X * cos.Value - yOffset * sin.Value;
+        double rotatedY = weapon.Position.X * sin.Value + yOffset * cos.Value;
+        double x = this.Position.X + rotatedX;
+        double y = this.Position.Y + rotatedY;
+        return new Position(x, y);
+    }
 }
