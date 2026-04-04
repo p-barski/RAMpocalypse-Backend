@@ -1,4 +1,6 @@
-﻿namespace RAMpocalypse.Server.Game;
+﻿using System.Collections.Concurrent;
+
+namespace RAMpocalypse.Server.Game;
 
 public class GameLobby(string id, MaxNumberOfPlayers maxNumberOfPlayers)
 {
@@ -6,6 +8,7 @@ public class GameLobby(string id, MaxNumberOfPlayers maxNumberOfPlayers)
     public List<Player> Players { get; init; } = [];
     public MaxNumberOfPlayers MaxNumberOfPlayers { get; init; } = maxNumberOfPlayers;
     public DateTime CreationTime { get; init; } = DateTime.UtcNow;
+    public ConcurrentDictionary<string, AttackEntity> LongLivedAttacks { get; init; } = [];
 
     public void AddPlayer(Player player)
     {

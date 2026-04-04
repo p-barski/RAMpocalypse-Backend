@@ -136,6 +136,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
             AttackEntites = [attackEntity],
             PlayersToNotify = lobby.Players,
         };
+        lobby.LongLivedAttacks[attackEntity.Id] = attackEntity;
         return result;
     }
 
@@ -208,6 +209,26 @@ public class GameService(IGameConfig gameConfig) : IGameService
             }]
         };
 
+        if (!lobby.LongLivedAttacks.TryGetValue(attackId, out var attackEntity))
+        {
+            return result;
+        }
+
+        var deltaTime = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - attackEntity.CreationTime) / 1000.0;
+        var currentAttackPosition = attackEntity.CurrentPosition + attackEntity.VelocityVector * deltaTime;
+        var halfWidth = hitPlayer.SpriteData.Width * hitPlayer.SpriteData.ScaleFactor / 2;
+        var halfHeight = hitPlayer.SpriteData.Height * hitPlayer.SpriteData.ScaleFactor / 2;
+        var cos = Math.Cos(-hitPlayer.Position.Angle);
+        var sin = Math.Sin(-hitPlayer.Position.Angle);
+        var dx = currentAttackPosition.X - hitPlayer.Position.X;
+        var dy = currentAttackPosition.Y - hitPlayer.Position.Y;
+        var localX = dx * cos - dy * sin;
+        var localY = dx * sin + dy * cos;
+        if (!(Math.Abs(localX) <= halfWidth && Math.Abs(localY) <= halfHeight))
+        {
+            return result;
+        }
+
         var oldHealth = hitPlayer.Health;
         hitPlayer.Health = Math.Max(0, hitPlayer.Health - gameConfig.ProjectileDamage);
         var died = hitPlayer.Health <= 0;
@@ -227,7 +248,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
             Died = died
         }];
         result.PlayersToNotify = lobby.Players;
-
+        lobby.LongLivedAttacks.TryRemove(attackId, out _);
         return result;
     }
 
