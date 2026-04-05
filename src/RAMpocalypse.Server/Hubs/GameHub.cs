@@ -324,6 +324,46 @@ public class GameHub(
         await HandleAttackAsync(result, lobby);
     }
 
+    public async Task SpecialExplosion(string attackId)
+    {
+        var attackOwner = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (attackOwner is null)
+        {
+            logger.LogWarning(
+                "SpecialExplosion called but attack owner not found - ConnectionId: {ConnectionId}, AttackId: {AttackId}",
+                Context.ConnectionId, attackId);
+            return;
+        }
+
+        var lobby = lobbyManager.GetLobbyByPlayer(attackOwner);
+        if (lobby is null)
+        {
+            logger.LogWarning(
+                "SpecialExplosion called but attack owner is not in a lobby - ConnectionId: {ConnectionId}, AttackId: {AttackId}",
+                Context.ConnectionId, attackId);
+            return;
+        }
+
+        if (!lobby.LongLivedAttacks.TryGetValue(attackId, out var attackEntity))
+        {
+            logger.LogWarning(
+                "SpecialExplosion called but attack id is not recognized - ConnectionId: {ConnectionId}, AttackId: {AttackId}",
+                Context.ConnectionId, attackId);
+            return;
+        }
+
+        if (attackEntity.OwnerId != attackOwner.Id)
+        {
+            logger.LogWarning(
+                "SpecialExplosion called but caller does not own this attack - ConnectionId: {ConnectionId}, AttackId: {AttackId}",
+                Context.ConnectionId, attackId);
+            return;
+        }
+
+        var result = gameService.HandleSpecialExplosion(attackEntity, lobby);
+        await HandleAttackAsync(result, lobby);
+    }
+
     private async Task RemovePlayerFromLobbyAsync(Player player)
     {
         //In case LeaveGame was called when player was not in lobby, or when disconnecting

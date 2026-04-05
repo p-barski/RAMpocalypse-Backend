@@ -9,6 +9,7 @@ public interface IGameService
     AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby);
     AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby);
     AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby);
+    AttackResult HandleSpecialExplosion(AttackEntity attackEntity, GameLobby lobby);
     AttackResult HandleProjectileHit(string attackId, Player hitPlayer, GameLobby lobby);
     Player? CheckWinCondition(GameLobby lobby);
     RespawnResult RespawnPlayer(Player player, GameLobby lobby);
