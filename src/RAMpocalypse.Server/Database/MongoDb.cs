@@ -6,15 +6,20 @@ namespace RAMpocalypse.Server.Database;
 
 public class MongoDb : IDatabase
 {
+    private readonly ILogger<MongoDb> logger;
     private readonly MongoClient client;
     private readonly IMongoDatabase database;
     private readonly IMongoCollection<LobbyResult> lobbyResults;
     private readonly IMongoCollection<ChatMessage> chatMessages;
-    private readonly Lock cacheLock = new();
-    private LinkedList<ChatMessage> cachedGlobalMessages = [];
-    public MongoDb(MongoDbConfig config)
+    private readonly DbCache cache = new();
+    public MongoDb(MongoDbConfig config, ILogger<MongoDb> logger)
     {
-        client = new MongoClient(config.ConnectionString);
+        this.logger = logger;
+        var settings = MongoClientSettings.FromConnectionString(config.ConnectionString);
+        settings.ConnectTimeout = TimeSpan.FromSeconds(5);
+        settings.SocketTimeout = settings.ConnectTimeout;
+        settings.ServerSelectionTimeout = settings.ConnectTimeout;
+        client = new MongoClient(settings);
         database = client.GetDatabase(config.DatabaseName);
         lobbyResults = database.GetCollection<LobbyResult>("LobbyResults");
         chatMessages = database.GetCollection<ChatMessage>("ChatMessages");
@@ -24,40 +29,48 @@ public class MongoDb : IDatabase
     }
     public async Task SaveLobbyResult(LobbyResult lobbyResult)
     {
-        await lobbyResults.InsertOneAsync(lobbyResult);
-    }
-    public async Task SaveTextMessage(ChatMessage message)
-    {
-        lock (cacheLock)
+        try
         {
-            cachedGlobalMessages.AddLast(message);
-            if (cachedGlobalMessages.Count > IDatabase.CHAT_HISTORY_MAX_COUNT)
-                cachedGlobalMessages.RemoveFirst();
+            await lobbyResults.InsertOneAsync(lobbyResult);
         }
-        await chatMessages.InsertOneAsync(message);
+        catch (Exception e)
+        {
+            logger.LogWarning("Could not save lobby result in mongodb - {Exception}", e);
+        }
+    }
+    public async Task SaveChatMessage(ChatMessage message)
+    {
+        cache.SaveChatMessage(message);
+        try
+        {
+            await chatMessages.InsertOneAsync(message);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning("Could not save chat message in mongodb - {Exception}", e);
+        }
     }
     public async Task FillGlobalChatHistoryCache()
     {
-        var messages = await chatMessages
-            .Find(Builders<ChatMessage>.Filter.Empty)
-            .Sort(Builders<ChatMessage>.Sort.Descending(m => m.Timestamp))
-            .Limit(IDatabase.CHAT_HISTORY_MAX_COUNT)
-            .Sort(Builders<ChatMessage>.Sort.Ascending(m => m.Timestamp))
-            .ToListAsync();
-        LinkedList<ChatMessage> msgs = new(messages);
-        lock (cacheLock)
+        List<ChatMessage> messages;
+        try
         {
-            cachedGlobalMessages = msgs;
+            messages = await chatMessages
+                .Find(Builders<ChatMessage>.Filter.Empty)
+                .Sort(Builders<ChatMessage>.Sort.Descending(m => m.Timestamp))
+                .Limit(IDatabase.CHAT_HISTORY_MAX_COUNT)
+                .Sort(Builders<ChatMessage>.Sort.Ascending(m => m.Timestamp))
+                .ToListAsync();
         }
+        catch (Exception e)
+        {
+            logger.LogWarning("Could not load global chat history from mongodb - {Exception}", e);
+            return;
+        }
+        cache.FillCache(messages);
     }
     public Task<ChatMessage[]> GetGlobalChatMessagesHistory(int count)
     {
-        count = Math.Clamp(count, 1, IDatabase.CHAT_HISTORY_MAX_COUNT);
-        ChatMessage[] msgs;
-        lock (cachedGlobalMessages)
-        {
-            msgs = cachedGlobalMessages.Take(count).ToArray();
-        }
-        return Task.FromResult(msgs);
+        return Task.FromResult(cache.GetGlobalChatMessagesHistory(count));
     }
 }

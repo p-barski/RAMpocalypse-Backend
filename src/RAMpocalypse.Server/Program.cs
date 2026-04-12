@@ -34,9 +34,18 @@ builder.Services.AddCors(options =>
   .Configure<MongoDbConfig>(builder.Configuration.GetSection("MongoDB"))
   .AddSingleton<IDatabase>(sp =>
   {
-      var db = new MongoDb(sp.GetRequiredService<IOptions<MongoDbConfig>>().Value);
-      _ = db.FillGlobalChatHistoryCache();
-      return db;
+      var logger = sp.GetRequiredService<ILogger<MongoDb>>();
+      try
+      {
+          var db = new MongoDb(sp.GetRequiredService<IOptions<MongoDbConfig>>().Value, logger);
+          _ = db.FillGlobalChatHistoryCache();
+          return db;
+      }
+      catch (Exception e)
+      {
+          logger.LogError("Could not establish connection to monogodb: {Exception}", e);
+      }
+      return new DummyDb();
   })
   .AddSingleton<IGameConfig, ReloadableGameConfig>()
   .AddSingleton<IPlayerConnectionService, PlayerConnectionService>()

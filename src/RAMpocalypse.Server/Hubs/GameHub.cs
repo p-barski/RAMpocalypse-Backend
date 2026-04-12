@@ -197,7 +197,7 @@ public class GameHub(
 
         if (type == ChatMessageType.Global)
         {
-            _ = database.SaveTextMessage(textMessage);
+            _ = database.SaveChatMessage(textMessage);
             await Clients.All.MessageReceived(textMessage);
             return;
         }
@@ -210,7 +210,7 @@ public class GameHub(
                 Context.ConnectionId);
             return;
         }
-        _ = database.SaveTextMessage(textMessage);
+        _ = database.SaveChatMessage(textMessage);
         foreach (var p in lobby.Players)
         {
             var connection = playerConnectionService.GetConnectionIdByPlayer(p);
