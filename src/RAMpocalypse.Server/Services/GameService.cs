@@ -26,8 +26,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
         var halfWidth = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
         var halfHeight = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
-        var correctedX = Math.Max(halfWidth, Math.Min(newPosition.X, gameConfig.GameWidth - halfWidth));
-        var correctedY = Math.Max(halfHeight, Math.Min(newPosition.Y, gameConfig.GameHeight - halfHeight));
+        var correctedX = Math.Clamp(newPosition.X, halfWidth, gameConfig.GameWidth - halfWidth);
+        var correctedY = Math.Clamp(newPosition.Y, halfHeight, gameConfig.GameHeight - halfHeight);
 
         result.CorrectedPosition = new Position(correctedX, correctedY, newPosition.Angle);
         result.NeedsCorrection = Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1;

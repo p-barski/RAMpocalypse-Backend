@@ -54,7 +54,7 @@ public readonly struct Position(double x, double y, double angle = 0)
         var lineDistanceSquared = lineDiff.X * lineDiff.X + lineDiff.Y * lineDiff.Y;
         var dotProduct = originLineDiff.X * lineDiff.X + originLineDiff.Y * lineDiff.Y;
         var t = dotProduct / lineDistanceSquared;
-        t = Math.Max(0, Math.Min(1, t));
+        t = Math.Clamp(t, 0, 1);
         var a = originLineDiff.X - t * lineDiff.X;
         var b = originLineDiff.Y - t * lineDiff.Y;
         var f = a * a + b * b;
@@ -67,7 +67,7 @@ public readonly struct Position(double x, double y, double angle = 0)
         var originLineDiff = origin - line1;
         var lineDistanceSquared = lineDiff.X * lineDiff.X + lineDiff.Y * lineDiff.Y;
         var t = (originLineDiff.X * lineDiff.X + originLineDiff.Y * lineDiff.Y) / lineDistanceSquared;
-        t = Math.Max(0, Math.Min(1, t));
+        t = Math.Clamp(t, 0, 1);
         return new Position(line1.X + t * lineDiff.X, line1.Y + t * lineDiff.Y);
     }
     public static bool IsInsideHalfCircle(Position origin, Position target, double radius, double angle)
