@@ -6,14 +6,17 @@ public class GameConfig : IGameConfig
 {
     public int GameWidth { get; set; } = 1920;
     public int GameHeight { get; set; } = 1080;
-    public double MaxMovementSpeed { get; set; } = 500.0;
-    public double MaxDistancePerUpdate { get; set; } = 25.0;
+    public int MovementSpeed { get; set; } = 500;
+    public int PositionUpdateIntervalMs { get; set; } = 16;
+    public double DashSpeedMultiplier { get; set; } = 4.0;
+    public int DashCooldownMs { get; set; } = 1000;
+    public int DashDurationMs { get; set; } = 250;
     public MaxNumberOfPlayers LobbySize { get; set; } = MaxNumberOfPlayers.Two;
     public int MeleeCooldownMs { get; set; } = 50;
     public int ProjectileCooldownMs { get; set; } = 100;
     public int SpecialCooldownMs { get; set; } = 300;
     public double MeleeRange { get; set; } = 300.0;
-    public double SpecialAttackRange { get; set; } = 100;
+    public double SpecialAttackRange { get; set; } = 100.0;
     public double ProjectileSpeed { get; set; } = 800.0;
     public double SpecialSpeed { get; set; } = 400.0;
     public int MeleeLifetime { get; set; } = 200;

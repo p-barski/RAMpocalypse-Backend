@@ -13,16 +13,16 @@ public class GameServiceTests
         var gameConfig = Substitute.For<IGameConfig>();
         gameConfig.GameWidth.Returns(800);
         gameConfig.GameHeight.Returns(600);
-        gameConfig.MaxMovementSpeed.Returns(500.0);
-        gameConfig.MaxDistancePerUpdate.Returns(25.0);
+        gameConfig.MovementSpeed.Returns(500);
+        gameConfig.PositionUpdateIntervalMs.Returns(30);
 
-        var spriteData = new SpriteData("/assets/sprites/player_1.png", 64, 32, 2);
+        var spriteData = new SpriteData("png", 64, 32, 2);
         var player = new Player("p1", spriteData)
         {
             Position = new Position(100.0, 100.0),
             LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("lobby-1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
         lobby.AddPlayer(player);
 
         var sut = new GameService(gameConfig);
@@ -31,28 +31,28 @@ public class GameServiceTests
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
 
         Assert.False(result.NeedsCorrection);
-        Assert.Equal(newPosition.X, result.CorrectedPosition.X);
-        Assert.Equal(newPosition.Y, result.CorrectedPosition.Y);
+        Assert.Equal(newPosition.X, result.FinalPosition.X);
+        Assert.Equal(newPosition.Y, result.FinalPosition.Y);
         Assert.Equal(newPosition.X, player.Position.X);
         Assert.Equal(newPosition.Y, player.Position.Y);
     }
 
     [Fact]
-    public void ValidateAndUpdatePosition_OutOfBounds_CorrectsPosition()
+    public void ValidateAndUpdatePosition_OutOfBounds_ClampsPositionToGameBoundaries()
     {
         var gameConfig = Substitute.For<IGameConfig>();
         gameConfig.GameWidth.Returns(800);
         gameConfig.GameHeight.Returns(600);
-        gameConfig.MaxMovementSpeed.Returns(500.0);
-        gameConfig.MaxDistancePerUpdate.Returns(25.0);
+        gameConfig.MovementSpeed.Returns(500);
+        gameConfig.PositionUpdateIntervalMs.Returns(30);
 
-        var spriteData = new SpriteData("/assets/sprites/player_1.png", 64, 32, 2);
+        var spriteData = new SpriteData("png", 64, 32, 2);
         var player = new Player("p1", spriteData)
         {
             Position = new Position(65.0, 100.0),
             LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("lobby-1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
         lobby.AddPlayer(player);
 
         var sut = new GameService(gameConfig);
@@ -60,39 +60,108 @@ public class GameServiceTests
 
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
 
-        Assert.True(result.NeedsCorrection);
-        Assert.Equal(64.0, result.CorrectedPosition.X);
-        Assert.Equal(100.0, result.CorrectedPosition.Y);
+        Assert.False(result.NeedsCorrection);
+        Assert.Equal(64.0, result.FinalPosition.X);
+        Assert.Equal(100.0, result.FinalPosition.Y);
+        Assert.Equal(64.0, player.Position.X);
+        Assert.Equal(100.0, player.Position.Y);
     }
 
     [Fact]
-    public void ValidateAndUpdatePosition_MovementTooFar_DoesNotUpdateAndReturnsCorrection()
+    public void ValidateAndUpdatePosition_MovementTooFar_UpdatesAsFarAsPossibleAndReturnsCorrection()
     {
         var gameConfig = Substitute.For<IGameConfig>();
         gameConfig.GameWidth.Returns(800);
         gameConfig.GameHeight.Returns(800);
-        gameConfig.MaxMovementSpeed.Returns(500.0);
-        gameConfig.MaxDistancePerUpdate.Returns(25.0);
+        gameConfig.MovementSpeed.Returns(500);
+        gameConfig.PositionUpdateIntervalMs.Returns(30);
 
-        var spriteData = new SpriteData("/assets/sprites/player_1.png", 64, 32, 2);
+        var spriteData = new SpriteData("png", 64, 32, 2);
         var player = new Player("p1", spriteData)
         {
             Position = new Position(100.0, 100.0),
-            LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.02)
+            LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("lobby-1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
         lobby.AddPlayer(player);
 
         var sut = new GameService(gameConfig);
-        var newPosition = new Position(500.0, 500.0); // Teleport - way too far
+        var newPosition = new Position(500.0, 500.0);
 
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
 
         Assert.True(result.NeedsCorrection);
-        Assert.Equal(100.0, result.CorrectedPosition.X);
-        Assert.Equal(100.0, result.CorrectedPosition.Y);
-        Assert.Equal(100.0, player.Position.X);
-        Assert.Equal(100.0, player.Position.Y);
+        Assert.Equal(121.0, Math.Floor(result.FinalPosition.X));
+        Assert.Equal(121.0, Math.Floor(result.FinalPosition.Y));
+        Assert.Equal(121.0, Math.Floor(player.Position.X));
+        Assert.Equal(121.0, Math.Floor(player.Position.Y));
+    }
+
+    [Fact]
+    public void ValidateAndUpdatePosition_Dash_UpdatesPositionBasedOnDashVelocity()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.GameWidth.Returns(800);
+        gameConfig.GameHeight.Returns(800);
+        gameConfig.MovementSpeed.Returns(500);
+        gameConfig.DashDurationMs.Returns(500);
+        gameConfig.PositionUpdateIntervalMs.Returns(30);
+
+        var spriteData = new SpriteData("png", 64, 32, 2);
+        var player = new Player("p1", spriteData)
+        {
+            IsDashing = true,
+            DashVelocity = new(100, 0),
+            Position = new Position(100.0, 100.0),
+        };
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        lobby.AddPlayer(player);
+
+        var sut = new GameService(gameConfig);
+        var newPosition = new Position(103.0, 100.0);
+        player.LastPositionUpdateTime = DateTime.UtcNow.AddMilliseconds(-30);
+        player.LastDashTime = player.LastPositionUpdateTime;
+        var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
+
+        Assert.False(result.NeedsCorrection);
+        Assert.Equal(103.0, Math.Floor(result.FinalPosition.X));
+        Assert.Equal(100.0, Math.Floor(result.FinalPosition.Y));
+        Assert.Equal(103.0, Math.Floor(player.Position.X));
+        Assert.Equal(100.0, Math.Floor(player.Position.Y));
+    }
+
+    [Fact]
+    public void ValidateAndUpdatePosition_Dash_SetsIsDashingFalseWhenPassedDashDuration()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.GameWidth.Returns(800);
+        gameConfig.GameHeight.Returns(800);
+        gameConfig.MovementSpeed.Returns(500);
+        gameConfig.DashDurationMs.Returns(500);
+        gameConfig.PositionUpdateIntervalMs.Returns(30);
+
+        var spriteData = new SpriteData("png", 64, 32, 2);
+        var player = new Player("p1", spriteData)
+        {
+            IsDashing = true,
+            DashVelocity = new(100, 0),
+            Position = new Position(100.0, 100.0),
+        };
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        lobby.AddPlayer(player);
+
+        var sut = new GameService(gameConfig);
+        var newPosition = new Position(150.0, 150.0);
+        player.LastPositionUpdateTime = DateTime.UtcNow;
+        player.LastDashTime = player.LastPositionUpdateTime.AddMilliseconds(-gameConfig.DashDurationMs);
+        var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
+
+        Assert.True(result.NeedsCorrection);
+        Assert.False(player.IsDashing);
+        Assert.Equal(100.0, Math.Floor(result.FinalPosition.X));
+        Assert.Equal(100.0, Math.Floor(result.FinalPosition.Y));
+        Assert.Equal(100.0, Math.Floor(player.Position.X));
+        Assert.Equal(100.0, Math.Floor(player.Position.Y));
     }
 
     [Fact]

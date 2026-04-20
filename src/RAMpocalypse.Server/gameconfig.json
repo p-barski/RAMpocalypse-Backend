@@ -2,8 +2,11 @@
   "GameConfig": {
     "GameWidth": 1920,
     "GameHeight": 1080,
-    "MaxMovementSpeed": 500,
-    "MaxDistancePerUpdate": 25,
+    "MovementSpeed": 500,
+    "PositionUpdateIntervalMs": 16,
+    "DashSpeedMultiplier": 4.0,
+    "DashCooldownMs": 1000,
+    "DashDurationMs": 250,
     "LobbySize": 2,
     "MeleeCooldownMs": 50,
     "ProjectileCooldownMs": 100,
@@ -15,9 +18,9 @@
     "MeleeLifetime": 200,
     "ProjectileLifetime": 3000,
     "SpecialLifetime": 1000,
-    "MeleeDamage": 1,
-    "ProjectileDamage": 1,
-    "SpecialDamage": 1,
+    "MeleeDamage": 10,
+    "ProjectileDamage": 15,
+    "SpecialDamage": 20,
     "RespawnCooldownMs": 3000,
     "MaxMessageLength": 100
   }

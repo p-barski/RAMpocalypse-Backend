@@ -6,6 +6,7 @@ namespace RAMpocalypse.Server.Services;
 public interface IGameService
 {
     PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby);
+    bool ValidateDash(Player player, double xVelocity, double yVelocity);
     AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby);
     AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby);
     AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby);

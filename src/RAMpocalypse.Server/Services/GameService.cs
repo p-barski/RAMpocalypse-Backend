@@ -1,5 +1,6 @@
 using RAMpocalypse.Server.Game;
 using RAMpocalypse.Server.Services.Results;
+using static RAMpocalypse.Server.MathUtils;
 
 namespace RAMpocalypse.Server.Services;
 
@@ -9,35 +10,73 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby)
     {
-        var result = new PositionUpdateResult() { CorrectedPosition = player.Position };
-
         var updateTime = DateTime.UtcNow;
         var timeSinceLastUpdate = (updateTime - player.LastPositionUpdateTime).TotalSeconds;
         player.LastPositionUpdateTime = updateTime;
-        var distanceSquared = Position.CalculateDistanceSquared(player.Position, newPosition);
-        var maxAllowedDistance = gameConfig.MaxDistancePerUpdate + (gameConfig.MaxMovementSpeed * timeSinceLastUpdate);
-
-        if (distanceSquared > maxAllowedDistance * maxAllowedDistance)
+        var finalPosition = player.Position;
+        if (player.IsDashing)
         {
-            // TODO: Move player to the closest valid position
-            result.NeedsCorrection = true;
-            return result;
+            var currentDashDurationMs = (updateTime - player.LastDashTime).TotalMilliseconds;
+            var dashDurationOverflowSeconds = Math.Max(currentDashDurationMs - gameConfig.DashDurationMs, 0) / 1000.0;
+            var deltaTime = Math.Max(timeSinceLastUpdate - dashDurationOverflowSeconds, 0);
+            finalPosition = player.Position + player.DashVelocity * deltaTime;
+            player.IsDashing = currentDashDurationMs < gameConfig.DashDurationMs;
+        }
+        else
+        {
+            var diffVector = newPosition - player.Position;
+            var xDirection = Math.Sign(diffVector.X);
+            var yDirection = Math.Sign(diffVector.Y);
+            var isDiagonalMovement = xDirection != 0 && yDirection != 0;
+            var diagonalDivisor = Math.Max(Convert.ToInt32(isDiagonalMovement) * SQRT_2, 1);
+            Position directionVector = new(xDirection / diagonalDivisor, yDirection / diagonalDivisor);
+            // limit deltaTime to prevent weird teleporting
+            var deltaTime = Math.Min(timeSinceLastUpdate, gameConfig.PositionUpdateIntervalMs * 2 / 1000.0);
+            finalPosition = player.Position + directionVector * gameConfig.MovementSpeed * deltaTime;
         }
 
-        var halfWidth = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
-        var halfHeight = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
-        var correctedX = Math.Clamp(newPosition.X, halfWidth, gameConfig.GameWidth - halfWidth);
-        var correctedY = Math.Clamp(newPosition.Y, halfHeight, gameConfig.GameHeight - halfHeight);
+        // Clamp to game boundaries
+        var halfScaleFactor = player.SpriteData.ScaleFactor / 2;
+        var minWidth = player.SpriteData.Width * halfScaleFactor;
+        var minHeight = player.SpriteData.Height * halfScaleFactor;
+        var maxWidth = gameConfig.GameWidth - minWidth;
+        var maxHeight = gameConfig.GameHeight - minHeight;
+        finalPosition = new(Math.Clamp(finalPosition.X, minWidth, maxWidth),
+            Math.Clamp(finalPosition.Y, minHeight, maxHeight), finalPosition.Angle);
+        newPosition = new(Math.Clamp(newPosition.X, minWidth, maxWidth),
+            Math.Clamp(newPosition.Y, minHeight, maxHeight), newPosition.Angle);
 
-        result.CorrectedPosition = new Position(correctedX, correctedY, newPosition.Angle);
-        result.NeedsCorrection = Math.Abs(correctedX - newPosition.X) > 0.1 || Math.Abs(correctedY - newPosition.Y) > 0.1;
+        var errorRate = gameConfig.MovementSpeed * gameConfig.PositionUpdateIntervalMs * 2 / 1000.0;
+        var needsCorrection = Math.Abs(finalPosition.X - newPosition.X) > errorRate
+            || Math.Abs(finalPosition.Y - newPosition.Y) > errorRate;
+        if (!needsCorrection) finalPosition = newPosition;
 
-        if (player.Position != result.CorrectedPosition)
+        player.Position = finalPosition;
+        return new()
         {
-            player.Position = result.CorrectedPosition;
-            result.PlayersToNotify = lobby.Players.Where(p => p != player).ToList();
-        }
-        return result;
+            NeedsCorrection = needsCorrection,
+            FinalPosition = finalPosition,
+            PlayersToNotify = lobby.Players.Where(p => p != player).ToList(),
+        };
+    }
+
+    public bool ValidateDash(Player player, double xVelocity, double yVelocity)
+    {
+        var dashTime = DateTime.UtcNow;
+        var timeSinceLastDash = (dashTime - player.LastDashTime).TotalMilliseconds;
+        if (timeSinceLastDash < gameConfig.DashCooldownMs) return false;
+
+        var maxVelocity = gameConfig.DashSpeedMultiplier * gameConfig.MovementSpeed + 1;
+        var maxTotalVelocity = maxVelocity / SQRT_2 * 2; // diagonal dash
+        var xVelAbs = Math.Abs(xVelocity);
+        var yVelAbs = Math.Abs(yVelocity);
+        if (xVelAbs > maxVelocity || yVelAbs > maxVelocity || xVelAbs + yVelAbs > maxTotalVelocity) return false;
+
+        player.LastDashTime = dashTime;
+        player.LastPositionUpdateTime = dashTime;
+        player.DashVelocity = new(xVelocity, yVelocity);
+        player.IsDashing = true;
+        return true;
     }
 
     public AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby)

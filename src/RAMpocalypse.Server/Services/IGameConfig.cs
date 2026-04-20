@@ -6,8 +6,11 @@ public interface IGameConfig
 {
     int GameWidth { get; }
     int GameHeight { get; }
-    double MaxMovementSpeed { get; }
-    double MaxDistancePerUpdate { get; }
+    int MovementSpeed { get; }
+    int PositionUpdateIntervalMs { get; }
+    double DashSpeedMultiplier { get; }
+    int DashCooldownMs { get; }
+    int DashDurationMs { get; }
     MaxNumberOfPlayers LobbySize { get; }
     int MeleeCooldownMs { get; }
     int ProjectileCooldownMs { get; }

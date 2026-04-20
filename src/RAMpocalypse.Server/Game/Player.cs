@@ -22,6 +22,9 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastProjectileAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
     public DateTime DeathTime { get; set; } = DateTime.MinValue;
+    public DateTime LastDashTime { get; set; } = DateTime.MinValue;
+    public Position DashVelocity { get; set; }
+    public bool IsDashing { get; set; } = false;
     public void ResetPlayerState()
     {
         Health = MaxHealth;

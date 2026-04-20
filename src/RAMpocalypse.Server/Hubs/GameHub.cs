@@ -75,7 +75,7 @@ public class GameHub(
         }
     }
 
-    public async Task UpdatePlayerPosition(Position newPosition)
+    public Task UpdatePlayerPosition(Position newPosition)
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (player is null)
@@ -83,7 +83,7 @@ public class GameHub(
             logger.LogWarning(
                 "UpdatePlayerPosition called but player not found - ConnectionId: {ConnectionId}",
                 Context.ConnectionId);
-            return;
+            return Task.CompletedTask;
         }
 
         var lobby = lobbyManager.GetLobbyByPlayer(player);
@@ -92,23 +92,14 @@ public class GameHub(
             logger.LogWarning(
                 "UpdatePlayerPosition called but player is not in lobby - ConnectionId: {ConnectionId}",
                 Context.ConnectionId);
-            return;
+            return Task.CompletedTask;
         }
 
         var result = gameService.ValidateAndUpdatePosition(player, newPosition, lobby);
 
-        logger.LogDebug(
-            "UpdatePlayerPosition called - PlayerId: {PlayerId}, X: {X}, Y: {Y}, LobbyId: {LobbyId}, NeedsCorrection: {NeedsCorrection}",
-            player.Id,
-            result.CorrectedPosition.X,
-            result.CorrectedPosition.Y,
-            lobby.Id,
-            result.NeedsCorrection);
-
         if (result.NeedsCorrection)
         {
-            await Clients.Client(Context.ConnectionId).PositionCorrected(result.CorrectedPosition);
-            return;
+            _ = Clients.Client(Context.ConnectionId).PositionCorrected(result.FinalPosition);
         }
 
         foreach (var otherPlayer in result.PlayersToNotify)
@@ -116,9 +107,32 @@ public class GameHub(
             var otherConnectionId = playerConnectionService.GetConnectionIdByPlayer(otherPlayer);
             if (otherConnectionId is not null)
             {
-                await Clients.Client(otherConnectionId).PlayerPositionUpdated(player.Id, result.CorrectedPosition);
+                _ = Clients.Client(otherConnectionId).PlayerPositionUpdated(player.Id, result.FinalPosition);
             }
         }
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> Dash(double xVelocity, double yVelocity)
+    {
+        var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (player is null)
+        {
+            logger.LogWarning(
+                "Dash called but player not found - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return Task.FromResult(false);
+        }
+
+        var lobby = lobbyManager.GetLobbyByPlayer(player);
+        if (lobby is null)
+        {
+            logger.LogWarning(
+                "Dash called but player is not in lobby - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return Task.FromResult(false);
+        }
+        return Task.FromResult(gameService.ValidateDash(player, xVelocity, yVelocity));
     }
 
     public async Task LeaveGame()

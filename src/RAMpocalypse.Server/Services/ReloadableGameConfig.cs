@@ -8,8 +8,11 @@ public class ReloadableGameConfig(IOptionsMonitor<GameConfig> monitor) : IGameCo
     private readonly IOptionsMonitor<GameConfig> monitor = monitor;
     public int GameWidth => monitor.CurrentValue.GameWidth;
     public int GameHeight => monitor.CurrentValue.GameHeight;
-    public double MaxMovementSpeed => monitor.CurrentValue.MaxMovementSpeed;
-    public double MaxDistancePerUpdate => monitor.CurrentValue.MaxDistancePerUpdate;
+    public int MovementSpeed => monitor.CurrentValue.MovementSpeed;
+    public int PositionUpdateIntervalMs => monitor.CurrentValue.PositionUpdateIntervalMs;
+    public double DashSpeedMultiplier => monitor.CurrentValue.DashSpeedMultiplier;
+    public int DashCooldownMs => monitor.CurrentValue.DashCooldownMs;
+    public int DashDurationMs => monitor.CurrentValue.DashDurationMs;
     public MaxNumberOfPlayers LobbySize => monitor.CurrentValue.LobbySize;
     public int MeleeCooldownMs => monitor.CurrentValue.MeleeCooldownMs;
     public int ProjectileCooldownMs => monitor.CurrentValue.ProjectileCooldownMs;
