@@ -1,0 +1,48 @@
+{
+  "SpriteInfo": {
+    "Data": [
+      {
+        "URL": "player_1.png",
+        "Width": 420,
+        "Height": 128,
+        "ScaleFactor": 1.0,
+        "Type": "Player"
+      },
+      {
+        "URL": "player_2.png",
+        "Width": 420,
+        "Height": 128,
+        "ScaleFactor": 1.0,
+        "Type": "Player"
+      },
+      {
+        "URL": "player_3.png",
+        "Width": 420,
+        "Height": 128,
+        "ScaleFactor": 1.0,
+        "Type": "Player"
+      },
+      {
+        "URL": "player_4.png",
+        "Width": 420,
+        "Height": 128,
+        "ScaleFactor": 1.0,
+        "Type": "Player"
+      },
+      {
+        "URL": "lightning_1.png",
+        "Width": 17,
+        "Height": 53,
+        "ScaleFactor": 6.0,
+        "Type": "Weapon"
+      },
+      {
+        "URL": "lightning_2.png",
+        "Width": 72,
+        "Height": 124,
+        "ScaleFactor": 2.0,
+        "Type": "Weapon"
+      }
+    ]
+  }
+}

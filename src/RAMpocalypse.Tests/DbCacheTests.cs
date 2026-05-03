@@ -2,6 +2,8 @@ using RAMpocalypse.Server.Database;
 using RAMpocalypse.Server.Services;
 using Xunit;
 
+namespace RAMpocalypse.Tests;
+
 public class DbCacheTests
 {
     private readonly DbCache cache;

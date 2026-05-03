@@ -8,7 +8,9 @@ using RAMpocalypse.Server.Services;
 var builder = WebApplication.CreateBuilder(args);
 var origin = "http://localhost:5173";
 
-builder.Configuration.AddJsonFile("gameconfig.json", optional: false, reloadOnChange: true);
+builder.Configuration
+.AddJsonFile("gameconfig.json", optional: false, reloadOnChange: true)
+.AddJsonFile("assetinfo.json", optional: false, reloadOnChange: true);
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -29,9 +31,15 @@ builder.Services.AddCors(options =>
     });
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 }).Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
+  .Configure<SpriteInfoJson>(builder.Configuration.GetSection("SpriteInfo"))
   // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
   // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
   .Configure<MongoDbConfig>(builder.Configuration.GetSection("MongoDB"))
+  .AddSingleton<ISpriteInfo>(sp =>
+  {
+      var jsonMonitor = sp.GetRequiredService<IOptionsMonitor<SpriteInfoJson>>();
+      return new SpriteInfo(jsonMonitor, "http://localhost:5027/assets/sprites/");
+  })
   .AddSingleton<IDatabase>(sp =>
   {
       var logger = sp.GetRequiredService<ILogger<MongoDb>>();

@@ -35,7 +35,7 @@ public class GameHub(
                 player.Id, Context.ConnectionId);
             return Task.FromResult(player.Id);
         }
-        player = playerFactory.CreatePlayer(Context.ConnectionId);
+        player = playerFactory.CreatePlayer();
         playerConnectionService.AddPlayer(Context.ConnectionId, player);
 
         logger.LogInformation(
@@ -69,6 +69,7 @@ public class GameHub(
             "Lobby created - LobbyId: {LobbyId}",
             result.Lobby.Id);
 
+        playerFactory.RandomizePlayersSprites(result.Lobby.Players);
         foreach (var lobbyPlayer in result.PlayersToNotify)
         {
             await SendLobbyStartAsync(lobbyPlayer, result.Lobby);

@@ -339,8 +339,8 @@ public class GameService(IGameConfig gameConfig) : IGameService
             };
         }
 
-        int xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
-        int yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
+        var xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
+        var yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
         var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
 
         player.Position = respawnPosition;

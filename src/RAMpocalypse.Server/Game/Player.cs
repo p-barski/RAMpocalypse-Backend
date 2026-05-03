@@ -2,8 +2,8 @@ namespace RAMpocalypse.Server.Game;
 
 public class SubEntity(Position position, SpriteData spriteData, string id)
 {
-    public Position Position { get; init; } = position;
-    public SpriteData SpriteData { get; init; } = spriteData;
+    public Position Position { get; set; } = position;
+    public SpriteData SpriteData { get; set; } = spriteData;
     public string Id { get; init; } = id;
     public List<SubEntity> SubEntities { get; set; } = [];
 }
@@ -12,7 +12,7 @@ public class Player(string id, SpriteData spriteData)
 {
     public string Id { get; init; } = id;
     public Position Position { get; set; } = new Position(0, 0);
-    public SpriteData SpriteData { get; init; } = spriteData;
+    public SpriteData SpriteData { get; set; } = spriteData;
     public List<SubEntity> SubEntities { get; set; } = [];
     public int Health { get; set; } = 100;
     public int MaxHealth { get; set; } = 100;
@@ -37,8 +37,8 @@ public class Player(string id, SpriteData spriteData)
     }
     public (Position, Position)[] GetHitboxLines()
     {
-        int halfWidth = this.SpriteData.Width * this.SpriteData.ScaleFactor / 2;
-        int halfHeight = this.SpriteData.Height * this.SpriteData.ScaleFactor / 2;
+        double halfWidth = this.SpriteData.Width * this.SpriteData.ScaleFactor / 2.0;
+        double halfHeight = this.SpriteData.Height * this.SpriteData.ScaleFactor / 2.0;
         double sin = Math.Sin(this.Position.Angle);
         double cos = Math.Cos(this.Position.Angle);
         double dxSin = halfWidth * sin;

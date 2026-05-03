@@ -47,8 +47,8 @@ public class MatchmakingService(
         }
 
         // Dimensions should be the same for both players, at least for now
-        int xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2;
-        int yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2;
+        var xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
+        var yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
         var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
         player.Position = corner1;
         otherPlayer.Position = corner2;

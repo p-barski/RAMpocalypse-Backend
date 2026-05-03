@@ -4,5 +4,6 @@ namespace RAMpocalypse.Server.Services;
 
 public interface IPlayerFactory
 {
-    Player CreatePlayer(string connectionId);
+    void RandomizePlayersSprites(List<Player> players);
+    Player CreatePlayer();
 }
