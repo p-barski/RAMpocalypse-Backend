@@ -3,30 +3,35 @@ using RAMpocalypse.Server.Game;
 
 namespace RAMpocalypse.Server.Services;
 
-public class ReloadableGameConfig(IOptionsMonitor<GameConfig> monitor) : IGameConfig
+public class ReloadableGameConfig : IGameConfig
 {
-    private readonly IOptionsMonitor<GameConfig> monitor = monitor;
-    public int GameWidth => monitor.CurrentValue.GameWidth;
-    public int GameHeight => monitor.CurrentValue.GameHeight;
-    public int MovementSpeed => monitor.CurrentValue.MovementSpeed;
-    public int PositionUpdateIntervalMs => monitor.CurrentValue.PositionUpdateIntervalMs;
-    public double DashSpeedMultiplier => monitor.CurrentValue.DashSpeedMultiplier;
-    public int DashCooldownMs => monitor.CurrentValue.DashCooldownMs;
-    public int DashDurationMs => monitor.CurrentValue.DashDurationMs;
-    public MaxNumberOfPlayers LobbySize => monitor.CurrentValue.LobbySize;
-    public int MeleeCooldownMs => monitor.CurrentValue.MeleeCooldownMs;
-    public int ProjectileCooldownMs => monitor.CurrentValue.ProjectileCooldownMs;
-    public int SpecialCooldownMs => monitor.CurrentValue.SpecialCooldownMs;
-    public double MeleeRange => monitor.CurrentValue.MeleeRange;
-    public double SpecialAttackRange => monitor.CurrentValue.SpecialAttackRange;
-    public double ProjectileSpeed => monitor.CurrentValue.ProjectileSpeed;
-    public double SpecialSpeed => monitor.CurrentValue.SpecialSpeed;
-    public int MeleeLifetime => monitor.CurrentValue.MeleeLifetime;
-    public int ProjectileLifetime => monitor.CurrentValue.ProjectileLifetime;
-    public int SpecialLifetime => monitor.CurrentValue.SpecialLifetime;
-    public int MeleeDamage => monitor.CurrentValue.MeleeDamage;
-    public int ProjectileDamage => monitor.CurrentValue.ProjectileDamage;
-    public int SpecialDamage => monitor.CurrentValue.SpecialDamage;
-    public int RespawnCooldownMs => monitor.CurrentValue.RespawnCooldownMs;
-    public int MaxMessageLength => monitor.CurrentValue.MaxMessageLength;
+    private GameConfig cache;
+    public ReloadableGameConfig(IOptionsMonitor<GameConfig> monitor)
+    {
+        cache = monitor.CurrentValue;
+        monitor.OnChange(config => cache = config);
+    }
+    public int GameWidth => cache.GameWidth;
+    public int GameHeight => cache.GameHeight;
+    public int MovementSpeed => cache.MovementSpeed;
+    public int PositionUpdateIntervalMs => cache.PositionUpdateIntervalMs;
+    public double DashSpeedMultiplier => cache.DashSpeedMultiplier;
+    public int DashCooldownMs => cache.DashCooldownMs;
+    public int DashDurationMs => cache.DashDurationMs;
+    public MaxNumberOfPlayers LobbySize => cache.LobbySize;
+    public int MeleeCooldownMs => cache.MeleeCooldownMs;
+    public int ProjectileCooldownMs => cache.ProjectileCooldownMs;
+    public int SpecialCooldownMs => cache.SpecialCooldownMs;
+    public double MeleeRange => cache.MeleeRange;
+    public double SpecialAttackRange => cache.SpecialAttackRange;
+    public double ProjectileSpeed => cache.ProjectileSpeed;
+    public double SpecialSpeed => cache.SpecialSpeed;
+    public int MeleeLifetime => cache.MeleeLifetime;
+    public int ProjectileLifetime => cache.ProjectileLifetime;
+    public int SpecialLifetime => cache.SpecialLifetime;
+    public int MeleeDamage => cache.MeleeDamage;
+    public int ProjectileDamage => cache.ProjectileDamage;
+    public int SpecialDamage => cache.SpecialDamage;
+    public int RespawnCooldownMs => cache.RespawnCooldownMs;
+    public int MaxMessageLength => cache.MaxMessageLength;
 }
