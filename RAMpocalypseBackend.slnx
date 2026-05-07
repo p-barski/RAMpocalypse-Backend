@@ -2,5 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/RAMpocalypse.Server/RAMpocalypse.Server.csproj" />
     <Project Path="src/RAMpocalypse.Tests/RAMpocalypse.Tests.csproj" />
+    <Project Path="src/RAMpocalypse.Benchmarks/RAMpocalypse.Benchmarks.csproj" />
   </Folder>
 </Solution>
