@@ -55,6 +55,7 @@ builder.Services.AddCors(options =>
       }
       return new DummyDb();
   })
+  .AddSingleton<IChatCooldowns, ChatCooldowns>()
   .AddSingleton<IGameConfig, ReloadableGameConfig>()
   .AddSingleton<IPlayerConnectionService, PlayerConnectionService>()
   .AddSingleton<ILobbyManager, LobbyManager>()

@@ -14,6 +14,7 @@ public class GameHub(
     IGameService gameService,
     IPlayerFactory playerFactory,
     IGameConfig gameConfig,
+    IChatCooldowns chatCooldowns,
     IDatabase database) : Hub<ISendMethods>
 {
     private readonly ILogger<GameHub> logger = logger;
@@ -23,6 +24,7 @@ public class GameHub(
     private readonly IGameService gameService = gameService;
     private readonly IPlayerFactory playerFactory = playerFactory;
     private readonly IGameConfig gameConfig = gameConfig;
+    private readonly IChatCooldowns chatCooldowns = chatCooldowns;
     private readonly IDatabase database = database;
 
     public Task<string> GetPlayerId()
@@ -155,8 +157,21 @@ public class GameHub(
         await RemovePlayerFromLobbyAsync(player);
     }
 
+    public override async Task OnConnectedAsync()
+    {
+        await base.OnConnectedAsync();
+        if (!chatCooldowns.TryAdd(Context.ConnectionId))
+        {
+            logger.LogWarning("Could not add chat cooldown for connection: {ConnectionId}", Context.ConnectionId);
+        }
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        if (!chatCooldowns.TryRemove(Context.ConnectionId))
+        {
+            logger.LogWarning("Could not remove chat cooldown for connection: {ConnectionId}", Context.ConnectionId);
+        }
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
         if (player is not null)
         {
@@ -174,6 +189,20 @@ public class GameHub(
 
     public async Task SendMessage(string message, ChatMessageType type)
     {
+        if (!chatCooldowns.TryGetValue(Context.ConnectionId, out var cooldown))
+        {
+            logger.LogWarning("Could not get chat cooldown for connection: {ConnectionId}", Context.ConnectionId);
+            return;
+        }
+        var remainingCooldown = cooldown.GetRemainingCooldown();
+        if (remainingCooldown > 0)
+        {
+            logger.LogWarning("Chat is on {RemainingCooldown}ms cooldown for connection: {ConnectionId}",
+                remainingCooldown, Context.ConnectionId);
+            return;
+        }
+        cooldown.UpdateCooldowns();
+
         if (message.Length > gameConfig.MaxMessageLength)
         {
             logger.LogWarning(
