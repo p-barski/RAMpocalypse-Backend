@@ -35,6 +35,7 @@ builder.Services.AddCors(options =>
   // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
   // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
   .Configure<MongoDbConfig>(builder.Configuration.GetSection("MongoDB"))
+  .AddSingleton(TimeProvider.System)
   .AddSingleton<ISpriteInfo>(sp =>
   {
       var jsonMonitor = sp.GetRequiredService<IOptionsMonitor<SpriteInfoJson>>();
@@ -62,6 +63,8 @@ builder.Services.AddCors(options =>
   .AddSingleton<IMatchmakingService, MatchmakingService>()
   .AddSingleton<IGameService, GameService>()
   .AddSingleton<IPlayerFactory, PlayerFactory>()
+  .AddSingleton<ILongLivedAttacksCleaner, LongLivedAttacksCleaner>()
+  .AddHostedService<LongLivedAttacksCleanupService>()
   .AddSignalR();
 
 builder.Services.AddControllers();

@@ -14,6 +14,17 @@ public class LobbyManager(IGameConfig gameConfig) : ILobbyManager
         return $"lobby_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
     }
 
+    public IReadOnlyCollection<GameLobby> GetActiveLobbies()
+    {
+        var snapshot = new List<GameLobby>(lobbies.Count);
+        foreach (var kvp in lobbies)
+        {
+            snapshot.Add(kvp.Value);
+        }
+
+        return snapshot;
+    }
+
     public GameLobby? GetLobbyByPlayer(Player player)
     {
         playerToLobbyMap.TryGetValue(player, out var lobby);
