@@ -21,6 +21,7 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastMeleeAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastProjectileAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
+    public DateTime LastAnyAttackTime { get; set; } = DateTime.MinValue;
     public DateTime DeathTime { get; set; } = DateTime.MinValue;
     public DateTime LastDashTime { get; set; } = DateTime.MinValue;
     public Position DashVelocity { get; set; }
@@ -33,6 +34,7 @@ public class Player(string id, SpriteData spriteData)
         LastMeleeAttackTime = DateTime.MinValue;
         LastProjectileAttackTime = DateTime.MinValue;
         LastSpecialAttackTime = DateTime.MinValue;
+        LastAnyAttackTime = DateTime.MinValue;
         DeathTime = DateTime.MinValue;
     }
     public (Position, Position)[] GetHitboxLines()

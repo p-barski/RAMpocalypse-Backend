@@ -11,6 +11,7 @@
     "MeleeCooldownMs": 50,
     "ProjectileCooldownMs": 100,
     "SpecialCooldownMs": 300,
+    "SharedAttackCooldownMs": 50,
     "MeleeRange": 300,
     "SpecialAttackRange": 100,
     "ProjectileSpeed": 800,

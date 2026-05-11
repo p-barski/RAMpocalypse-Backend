@@ -84,6 +84,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
         if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
+        var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
+        if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+
         var timeSinceLastAttack = (attackTime - attacker.LastMeleeAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return new AttackResult();
 
@@ -101,6 +104,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
         };
 
         attacker.LastMeleeAttackTime = attackTime;
+        attacker.LastAnyAttackTime = attackTime;
         var attackPosition = attacker.GetAttackPosition();
         var hitPlayerInfos = new List<HitPlayerInfo>();
         foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
@@ -152,10 +156,14 @@ public class GameService(IGameConfig gameConfig) : IGameService
         if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
+        var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
+        if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+
         var timeSinceLastAttack = (attackTime - attacker.LastProjectileAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.ProjectileCooldownMs) return new AttackResult();
 
         attacker.LastProjectileAttackTime = attackTime;
+        attacker.LastAnyAttackTime = attackTime;
 
         double sin = Math.Sin(attacker.Position.Angle);
         double cos = Math.Cos(attacker.Position.Angle);
@@ -183,10 +191,14 @@ public class GameService(IGameConfig gameConfig) : IGameService
         if (!attacker.IsAlive) return new AttackResult();
 
         var attackTime = DateTime.UtcNow;
+        var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
+        if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return new AttackResult();
 
         attacker.LastSpecialAttackTime = attackTime;
+        attacker.LastAnyAttackTime = attackTime;
 
         double sin = Math.Sin(attacker.Position.Angle);
         double cos = Math.Cos(attacker.Position.Angle);

@@ -22,6 +22,7 @@ public class ReloadableGameConfig : IGameConfig
     public int MeleeCooldownMs => cache.MeleeCooldownMs;
     public int ProjectileCooldownMs => cache.ProjectileCooldownMs;
     public int SpecialCooldownMs => cache.SpecialCooldownMs;
+    public int SharedAttackCooldownMs => cache.SharedAttackCooldownMs;
     public double MeleeRange => cache.MeleeRange;
     public double SpecialAttackRange => cache.SpecialAttackRange;
     public double ProjectileSpeed => cache.ProjectileSpeed;
