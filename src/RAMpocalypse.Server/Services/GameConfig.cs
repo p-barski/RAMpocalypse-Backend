@@ -12,10 +12,10 @@ public class GameConfig : IGameConfig
     public int DashCooldownMs { get; set; } = 1000;
     public int DashDurationMs { get; set; } = 250;
     public MaxNumberOfPlayers LobbySize { get; set; } = MaxNumberOfPlayers.Two;
-    public int MeleeCooldownMs { get; set; } = 50;
-    public int ProjectileCooldownMs { get; set; } = 100;
-    public int SpecialCooldownMs { get; set; } = 300;
-    public int SharedAttackCooldownMs { get; set; } = 50;
+    public int MeleeCooldownMs { get; set; } = 700;
+    public int ProjectileCooldownMs { get; set; } = 500;
+    public int SpecialCooldownMs { get; set; } = 3000;
+    public int SharedAttackCooldownMs { get; set; } = 400;
     public double MeleeRange { get; set; } = 300.0;
     public double SpecialAttackRange { get; set; } = 100.0;
     public double ProjectileSpeed { get; set; } = 800.0;
