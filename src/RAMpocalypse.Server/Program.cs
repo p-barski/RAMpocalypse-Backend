@@ -1,7 +1,7 @@
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using RAMpocalypse.Server.Database;
+using RAMpocalypse.Server.Extensions;
 using RAMpocalypse.Server.Hubs;
 using RAMpocalypse.Server.Services;
 
@@ -20,17 +20,8 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
-}).AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("api", opt =>
-    {
-        opt.PermitLimit = 10;
-        opt.Window = TimeSpan.FromSeconds(30);
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2;
-    });
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-}).Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
+}).AddCustomRateLimiting(builder.Configuration)
+  .Configure<GameConfig>(builder.Configuration.GetSection("GameConfig"))
   .Configure<SpriteInfoJson>(builder.Configuration.GetSection("SpriteInfo"))
   // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
   // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
@@ -65,24 +56,21 @@ builder.Services.AddCors(options =>
   .AddSingleton<IPlayerFactory, PlayerFactory>()
   .AddSingleton<ILongLivedAttacksCleaner, LongLivedAttacksCleaner>()
   .AddHostedService<LongLivedAttacksCleanupService>()
-  .AddSignalR();
+  .AddSingleton<HubMethodRateLimiterFactory>()
+  .AddSingleton<HubInvocationRateLimiterRegistry>()
+  .AddSignalR()
+  .AddHubOptions<GameHub>(options => options.AddFilter(typeof(RateLimitingHubFilter)));
 
 builder.Services.AddControllers();
 var app = builder.Build();
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
-        ctx.Context.Response.Headers.Append("Pragma", "no-cache");
-        ctx.Context.Response.Headers.Append("Expires", "0");
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
-    }
-}).UseCors().UseRateLimiter();
+app.UseCors()
+   .UseStaticAssetsResponseHeaders(origin)
+   .UseRateLimiter();
 
 app.MapGet("/", () => "RAMpocalypse Server is running!");
-app.MapHub<GameHub>("/gamehub");
+app.MapHub<GameHub>("/gamehub").RequireRateLimiting("hubConnect");
+app.MapStaticAssets().RequireRateLimiting("staticAssets");
 app.MapControllers().RequireRateLimiting("api");
 
 app.Run();
