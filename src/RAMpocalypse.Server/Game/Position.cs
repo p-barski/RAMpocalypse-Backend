@@ -25,10 +25,10 @@ public readonly struct Position(double x, double y, double angle = 0)
         int oppositeIndex = 3 - cornerIndex;
 
         Position[] corners = [
-            new (xOffset, yOffset),                         // top-left
-            new (gameWidth - xOffset, yOffset),             // top-right
-            new (xOffset, gameHeight - yOffset),            // bottom-left
-            new (gameWidth - xOffset, gameHeight - yOffset) // bottom-right
+            new (xOffset, yOffset, Math.PI),                         // top-left
+            new (gameWidth - xOffset, yOffset, Math.PI),             // top-right
+            new (xOffset, gameHeight - yOffset, 0),                    // bottom-left
+            new (gameWidth - xOffset, gameHeight - yOffset, 0)         // bottom-right
         ];
 
         return (corners[cornerIndex], corners[oppositeIndex]);
