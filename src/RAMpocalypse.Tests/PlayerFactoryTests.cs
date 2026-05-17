@@ -21,7 +21,7 @@ public class PlayerFactoryTests
         weaponSprites ??= [CreateWeaponSprite("fallback_weapon.png")];
         spriteInfo.GetAllOfType(SpriteType.Player).Returns(playerSprites);
         spriteInfo.GetAllOfType(SpriteType.Weapon).Returns(weaponSprites);
-        return new PlayerFactory(Substitute.For<ILogger<PlayerFactory>>(), spriteInfo);
+        return new PlayerFactory(Substitute.For<ILogger<PlayerFactory>>(), spriteInfo, TimeProvider.System);
     }
 
     private static Player CreateTestPlayer()

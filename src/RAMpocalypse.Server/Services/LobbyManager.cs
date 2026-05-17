@@ -3,15 +3,16 @@ using RAMpocalypse.Server.Game;
 
 namespace RAMpocalypse.Server.Services;
 
-public class LobbyManager(IGameConfig gameConfig) : ILobbyManager
+public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : ILobbyManager
 {
     private readonly ConcurrentDictionary<Player, GameLobby> playerToLobbyMap = [];
     private readonly ConcurrentDictionary<string, GameLobby> lobbies = [];
     private readonly IGameConfig gameConfig = gameConfig;
+    private readonly TimeProvider timeProvider = timeProvider;
 
-    private static string GenerateLobbyId()
+    private string GenerateLobbyId()
     {
-        return $"lobby_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
+        return $"lobby_{timeProvider.GetUtcNow().ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
     }
 
     public IReadOnlyCollection<GameLobby> GetActiveLobbies()
@@ -33,7 +34,8 @@ public class LobbyManager(IGameConfig gameConfig) : ILobbyManager
 
     public GameLobby CreateLobby(Player player1, Player player2)
     {
-        var lobby = new GameLobby(GenerateLobbyId(), gameConfig.LobbySize);
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        var lobby = new GameLobby(GenerateLobbyId(), gameConfig.LobbySize, utcNow);
         lobby.AddPlayer(player1);
         lobby.AddPlayer(player2);
         playerToLobbyMap[player1] = lobby;
@@ -64,9 +66,10 @@ public class LobbyManager(IGameConfig gameConfig) : ILobbyManager
 
     public void RemoveLobby(GameLobby lobby)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var player in lobby.Players)
         {
-            player.ResetPlayerState();
+            player.ResetPlayerState(utcNow);
             playerToLobbyMap.TryRemove(player, out _);
         }
         lobbies.TryRemove(lobby.Id, out _);

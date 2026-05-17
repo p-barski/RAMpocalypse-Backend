@@ -4,13 +4,17 @@ using static RAMpocalypse.Server.MathUtils;
 
 namespace RAMpocalypse.Server.Services;
 
-public class GameService(IGameConfig gameConfig) : IGameService
+public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IGameService
 {
     private readonly IGameConfig gameConfig = gameConfig;
+    private readonly TimeProvider timeProvider = timeProvider;
+
+    private string GenerateAttackId() =>
+        $"attack_{timeProvider.GetUtcNow().ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
 
     public PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby)
     {
-        var updateTime = DateTime.UtcNow;
+        var updateTime = timeProvider.GetUtcNow().UtcDateTime;
         var timeSinceLastUpdate = (updateTime - player.LastPositionUpdateTime).TotalSeconds;
         player.LastPositionUpdateTime = updateTime;
         var finalPosition = player.Position;
@@ -62,7 +66,7 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public bool ValidateDash(Player player, double xVelocity, double yVelocity)
     {
-        var dashTime = DateTime.UtcNow;
+        var dashTime = timeProvider.GetUtcNow().UtcDateTime;
         var timeSinceLastDash = (dashTime - player.LastDashTime).TotalMilliseconds;
         if (timeSinceLastDash < gameConfig.DashCooldownMs) return false;
 
@@ -83,7 +87,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
     {
         if (!attacker.IsAlive) return new AttackResult();
 
-        var attackTime = DateTime.UtcNow;
+        var utcNow = timeProvider.GetUtcNow();
+        var attackTime = utcNow.UtcDateTime;
+        var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
 
@@ -94,12 +100,13 @@ public class GameService(IGameConfig gameConfig) : IGameService
         {
             AttackEntites = [new AttackEntity
             {
+                Id = GenerateAttackId(),
                 OwnerId = attacker.Id,
                 Type = AttackType.Melee,
                 CurrentPosition = new Position(-500, -500),
                 VelocityVector = new Position(0, 0, 0),
                 Lifetime = 0,
-                CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
+                CreationTime = attackTimeUnixMs,
             }]
         };
 
@@ -155,7 +162,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
     {
         if (!attacker.IsAlive) return new AttackResult();
 
-        var attackTime = DateTime.UtcNow;
+        var utcNow = timeProvider.GetUtcNow();
+        var attackTime = utcNow.UtcDateTime;
+        var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
 
@@ -170,12 +179,13 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var velocityVector = new Position(sin * gameConfig.ProjectileSpeed, -cos * gameConfig.ProjectileSpeed);
         var attackEntity = new AttackEntity
         {
+            Id = GenerateAttackId(),
             OwnerId = attacker.Id,
             Type = AttackType.Projectile,
             CurrentPosition = attacker.GetAttackPosition(sin, cos),
             VelocityVector = velocityVector,
             Lifetime = gameConfig.ProjectileLifetime,
-            CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
+            CreationTime = attackTimeUnixMs,
         };
         lobby.LongLivedAttacks[attackEntity.Id] = attackEntity;
         return new AttackResult()
@@ -190,7 +200,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
     {
         if (!attacker.IsAlive) return new AttackResult();
 
-        var attackTime = DateTime.UtcNow;
+        var utcNow = timeProvider.GetUtcNow();
+        var attackTime = utcNow.UtcDateTime;
+        var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
 
@@ -206,12 +218,13 @@ public class GameService(IGameConfig gameConfig) : IGameService
         var velocityVector = new Position(sin * gameConfig.SpecialSpeed, -cos * gameConfig.SpecialSpeed);
         var attackEntity = new AttackEntity
         {
+            Id = GenerateAttackId(),
             OwnerId = attacker.Id,
             Type = AttackType.Special,
             CurrentPosition = attackPosition,
             VelocityVector = velocityVector,
             Lifetime = gameConfig.SpecialLifetime,
-            CreationTime = new DateTimeOffset(attackTime).ToUnixTimeMilliseconds(),
+            CreationTime = attackTimeUnixMs,
         };
         lobby.LongLivedAttacks[attackEntity.Id] = attackEntity;
         return new AttackResult
@@ -224,8 +237,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
 
     public AttackResult HandleSpecialExplosion(AttackEntity attackEntity, GameLobby lobby)
     {
-        var explosionTime = DateTime.UtcNow;
-        var explosionTimeUnixMs = new DateTimeOffset(explosionTime).ToUnixTimeMilliseconds();
+        var utcNow = timeProvider.GetUtcNow();
+        var explosionTime = utcNow.UtcDateTime;
+        var explosionTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var attackLifetime = explosionTimeUnixMs - attackEntity.CreationTime;
         if (attackLifetime < attackEntity.Lifetime)
             return new AttackResult();
@@ -285,8 +299,9 @@ public class GameService(IGameConfig gameConfig) : IGameService
         if (!hitPlayer.IsAlive || !lobby.LongLivedAttacks.TryGetValue(attackId, out var attackEntity))
             return new AttackResult();
 
-        var now = DateTime.UtcNow;
-        var deltaTime = (new DateTimeOffset(now).ToUnixTimeMilliseconds() - attackEntity.CreationTime) / 1000.0;
+        var utcNow = timeProvider.GetUtcNow();
+        var now = utcNow.UtcDateTime;
+        var deltaTime = (utcNow.ToUnixTimeMilliseconds() - attackEntity.CreationTime) / 1000.0;
         var currentAttackPosition = attackEntity.CurrentPosition + attackEntity.VelocityVector * deltaTime;
         var halfWidth = hitPlayer.SpriteData.Width * hitPlayer.SpriteData.ScaleFactor / 2;
         var halfHeight = hitPlayer.SpriteData.Height * hitPlayer.SpriteData.ScaleFactor / 2;

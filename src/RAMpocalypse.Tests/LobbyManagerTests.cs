@@ -12,7 +12,7 @@ public class LobbyManagerTests
     {
         var gameConfig = Substitute.For<IGameConfig>();
         gameConfig.LobbySize.Returns(MaxNumberOfPlayers.Two);
-        return new LobbyManager(gameConfig);
+        return new LobbyManager(gameConfig, TimeProvider.System);
     }
 
     [Fact]

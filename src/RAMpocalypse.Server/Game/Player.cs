@@ -17,7 +17,7 @@ public class Player(string id, SpriteData spriteData)
     public int Health { get; set; } = 100;
     public int MaxHealth { get; set; } = 100;
     public bool IsAlive { get; set; } = true;
-    public DateTime LastPositionUpdateTime { get; set; } = DateTime.UtcNow;
+    public DateTime LastPositionUpdateTime { get; set; } = DateTime.MinValue;
     public DateTime LastMeleeAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastProjectileAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
@@ -26,11 +26,11 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastDashTime { get; set; } = DateTime.MinValue;
     public Position DashVelocity { get; set; }
     public bool IsDashing { get; set; } = false;
-    public void ResetPlayerState()
+    public void ResetPlayerState(DateTime utcNow)
     {
         Health = MaxHealth;
         IsAlive = true;
-        LastPositionUpdateTime = DateTime.UtcNow;
+        LastPositionUpdateTime = utcNow;
         LastMeleeAttackTime = DateTime.MinValue;
         LastProjectileAttackTime = DateTime.MinValue;
         LastSpecialAttackTime = DateTime.MinValue;

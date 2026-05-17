@@ -17,7 +17,7 @@ public class LobbyManagerBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        lobbyManager = new LobbyManager(new GameConfig());
+        lobbyManager = new LobbyManager(new GameConfig(), TimeProvider.System);
 
         for (int i = 0; i < LobbyCount; i++)
         {

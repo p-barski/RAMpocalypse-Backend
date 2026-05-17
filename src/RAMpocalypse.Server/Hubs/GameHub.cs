@@ -15,7 +15,8 @@ public class GameHub(
     IPlayerFactory playerFactory,
     IGameConfig gameConfig,
     IChatCooldowns chatCooldowns,
-    IDatabase database) : Hub<ISendMethods>
+    IDatabase database,
+    TimeProvider timeProvider) : Hub<ISendMethods>
 {
     private readonly ILogger<GameHub> logger = logger;
     private readonly IPlayerConnectionService playerConnectionService = playerConnectionService;
@@ -26,6 +27,7 @@ public class GameHub(
     private readonly IGameConfig gameConfig = gameConfig;
     private readonly IChatCooldowns chatCooldowns = chatCooldowns;
     private readonly IDatabase database = database;
+    private readonly TimeProvider timeProvider = timeProvider;
 
     public Task<string> GetPlayerId()
     {
@@ -229,14 +231,15 @@ public class GameHub(
             return;
         }
 
+        var utcNow = timeProvider.GetUtcNow();
         var textMessage = new ChatMessage()
         {
-            Id = $"msg_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}",
+            Id = $"msg_{utcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}",
             Text = message,
             Type = type,
             OwnerId = player.Id,
             OwnerName = player.Id[^10..],
-            Timestamp = DateTime.UtcNow,
+            Timestamp = utcNow.UtcDateTime,
         };
 
         if (type == ChatMessageType.Global)
@@ -411,13 +414,14 @@ public class GameHub(
     private async Task RemovePlayerFromLobbyAsync(Player player)
     {
         //In case LeaveGame was called when player was not in lobby, or when disconnecting
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         matchmakingService.CancelMatchmaking(player);
-        player.ResetPlayerState();
+        player.ResetPlayerState(utcNow);
         var lobby = lobbyManager.GetLobbyByPlayer(player);
         var players = lobbyManager.RemovePlayerFromLobby(player);
         foreach (var lobbyPlayer in players)
         {
-            lobbyPlayer.ResetPlayerState();
+            lobbyPlayer.ResetPlayerState(utcNow);
             var connectionId = playerConnectionService.GetConnectionIdByPlayer(lobbyPlayer);
             if (connectionId is not null)
             {
@@ -426,7 +430,7 @@ public class GameHub(
         }
         if (lobby?.Players.Count <= 1)
         {
-            _ = database.SaveLobbyResult(new LobbyResult(lobby));
+            _ = database.SaveLobbyResult(new LobbyResult(lobby) { FinishTime = utcNow });
         }
     }
 
@@ -495,7 +499,10 @@ public class GameHub(
         }
         if (winner is not null)
         {
-            _ = database.SaveLobbyResult(new LobbyResult(lobby, winner.Id));
+            _ = database.SaveLobbyResult(new LobbyResult(lobby, winner.Id)
+            {
+                FinishTime = timeProvider.GetUtcNow().UtcDateTime,
+            });
             lobbyManager.RemoveLobby(lobby);
         }
     }

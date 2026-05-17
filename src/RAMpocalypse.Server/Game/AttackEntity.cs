@@ -2,7 +2,7 @@ namespace RAMpocalypse.Server.Game;
 
 public class AttackEntity
 {
-    public string Id { get; set; } = $"attack_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
+    public string Id { get; set; } = "";
     public string OwnerId { get; set; } = "";
     public AttackType Type { get; set; }
     public Position CurrentPosition { get; set; }

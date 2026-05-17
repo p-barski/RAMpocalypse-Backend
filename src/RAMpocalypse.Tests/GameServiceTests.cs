@@ -22,10 +22,10 @@ public class GameServiceTests
             Position = new Position(100.0, 100.0),
             LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, DateTime.UtcNow);
         lobby.AddPlayer(player);
 
-        var sut = new GameService(gameConfig);
+        var sut = new GameService(gameConfig, TimeProvider.System);
         var newPosition = new Position(105.0, 102.0);
 
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
@@ -52,10 +52,10 @@ public class GameServiceTests
             Position = new Position(65.0, 100.0),
             LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, DateTime.UtcNow);
         lobby.AddPlayer(player);
 
-        var sut = new GameService(gameConfig);
+        var sut = new GameService(gameConfig, TimeProvider.System);
         var newPosition = new Position(63.0, 100.0); // Outside left boundary but within movement distance
 
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
@@ -82,10 +82,10 @@ public class GameServiceTests
             Position = new Position(100.0, 100.0),
             LastPositionUpdateTime = DateTime.UtcNow.AddSeconds(-0.5)
         };
-        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, DateTime.UtcNow);
         lobby.AddPlayer(player);
 
-        var sut = new GameService(gameConfig);
+        var sut = new GameService(gameConfig, TimeProvider.System);
         var newPosition = new Position(500.0, 500.0);
 
         var result = sut.ValidateAndUpdatePosition(player, newPosition, lobby);
@@ -114,10 +114,10 @@ public class GameServiceTests
             DashVelocity = new(100, 0),
             Position = new Position(100.0, 100.0),
         };
-        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, DateTime.UtcNow);
         lobby.AddPlayer(player);
 
-        var sut = new GameService(gameConfig);
+        var sut = new GameService(gameConfig, TimeProvider.System);
         var newPosition = new Position(103.0, 100.0);
         player.LastPositionUpdateTime = DateTime.UtcNow.AddMilliseconds(-30);
         player.LastDashTime = player.LastPositionUpdateTime;
@@ -147,10 +147,10 @@ public class GameServiceTests
             DashVelocity = new(100, 0),
             Position = new Position(100.0, 100.0),
         };
-        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four);
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, DateTime.UtcNow);
         lobby.AddPlayer(player);
 
-        var sut = new GameService(gameConfig);
+        var sut = new GameService(gameConfig, TimeProvider.System);
         var newPosition = new Position(150.0, 150.0);
         player.LastPositionUpdateTime = DateTime.UtcNow;
         player.LastDashTime = player.LastPositionUpdateTime.AddMilliseconds(-gameConfig.DashDurationMs);

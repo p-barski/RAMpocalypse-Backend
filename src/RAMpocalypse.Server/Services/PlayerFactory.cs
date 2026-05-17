@@ -2,10 +2,11 @@ using RAMpocalypse.Server.Game;
 
 namespace RAMpocalypse.Server.Services;
 
-public class PlayerFactory(ILogger<PlayerFactory> logger, ISpriteInfo spriteInfo) : IPlayerFactory
+public class PlayerFactory(ILogger<PlayerFactory> logger, ISpriteInfo spriteInfo, TimeProvider timeProvider) : IPlayerFactory
 {
     private readonly ILogger<PlayerFactory> logger = logger;
     private readonly ISpriteInfo spriteInfo = spriteInfo;
+    private readonly TimeProvider timeProvider = timeProvider;
     private readonly Random random = new();
     public void RandomizePlayersSprites(List<Player> players)
     {
@@ -65,16 +66,19 @@ public class PlayerFactory(ILogger<PlayerFactory> logger, ISpriteInfo spriteInfo
         var weaponVariant = random.Next(0, weaponSprites.Count);
         var playerSprite = playerSprites[playerVariant];
         var weaponSprite = weaponSprites[weaponVariant];
-        var player = new Player(GeneratePlayerId(), playerSprite);
+        var player = new Player(GeneratePlayerId(), playerSprite)
+        {
+            LastPositionUpdateTime = timeProvider.GetUtcNow().UtcDateTime,
+        };
         var weaponOffset = CalculateWeaponOffset(playerSprite, weaponSprite);
         var weapon = new SubEntity(weaponOffset, weaponSprite, $"weapon_{player.Id}");
         player.SubEntities.Add(weapon);
         return player;
     }
 
-    private static string GeneratePlayerId()
+    private string GeneratePlayerId()
     {
-        return $"player_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
+        return $"player_{timeProvider.GetUtcNow().ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
     }
 
     private static Position CalculateWeaponOffset(SpriteData playerSprite, SpriteData weaponSprite)

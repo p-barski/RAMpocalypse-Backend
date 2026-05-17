@@ -36,7 +36,7 @@ public class PlayerFactoryBenchmarks
         var monitor = Substitute.For<IOptionsMonitor<SpriteInfoJson>>();
         monitor.CurrentValue.Returns(json);
         SpriteInfo spriteInfo = new(monitor, "serverurl");
-        playerFactory = new(Substitute.For<ILogger<PlayerFactory>>(), spriteInfo);
+        playerFactory = new(Substitute.For<ILogger<PlayerFactory>>(), spriteInfo, TimeProvider.System);
     }
 
     [Benchmark]

@@ -7,16 +7,6 @@ namespace RAMpocalypse.Tests;
 
 public class LongLivedAttacksCleanerTests
 {
-    private sealed class TestTimeProvider(long utcMilliseconds) : TimeProvider
-    {
-        private DateTimeOffset utcNow = DateTimeOffset.FromUnixTimeMilliseconds(utcMilliseconds);
-
-        public void SetUtcMilliseconds(long utcMilliseconds) =>
-            utcNow = DateTimeOffset.FromUnixTimeMilliseconds(utcMilliseconds);
-
-        public override DateTimeOffset GetUtcNow() => utcNow;
-    }
-
     private static AttackEntity CreateAttack(string id, AttackType type, long creationTimeMs, long lifetimeMs) =>
         new()
         {
@@ -31,7 +21,7 @@ public class LongLivedAttacksCleanerTests
 
     private static GameLobby CreateLobbyWithAttack(AttackEntity attack)
     {
-        var lobby = new GameLobby($"lobby_{attack.Id}", MaxNumberOfPlayers.Two);
+        var lobby = new GameLobby($"lobby_{attack.Id}", MaxNumberOfPlayers.Two, DateTime.UtcNow);
         lobby.LongLivedAttacks[attack.Id] = attack;
         return lobby;
     }
@@ -113,7 +103,7 @@ public class LongLivedAttacksCleanerTests
         var freshSpecial = CreateAttack("fs", AttackType.Special, baseTime, 10_000);
         var expiredSpecial = CreateAttack("xs", AttackType.Special, baseTime, 500);
         var timeProvider = new TestTimeProvider(baseTime + 501);
-        var lobby = new GameLobby("lobby_mixed", MaxNumberOfPlayers.Two);
+        var lobby = new GameLobby("lobby_mixed", MaxNumberOfPlayers.Two, DateTime.UtcNow);
         lobby.LongLivedAttacks[expiredProjectile.Id] = expiredProjectile;
         lobby.LongLivedAttacks[freshSpecial.Id] = freshSpecial;
         lobby.LongLivedAttacks[expiredSpecial.Id] = expiredSpecial;
