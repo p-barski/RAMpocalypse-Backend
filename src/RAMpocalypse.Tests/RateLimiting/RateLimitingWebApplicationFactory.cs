@@ -15,6 +15,8 @@ public sealed class RateLimitingWebApplicationFactory : WebApplicationFactory<Pr
         {
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
+                ["Server:FrontendOrigin"] = "http://localhost:5173",
+                ["Server:SpriteBaseUrl"] = "http://localhost:5027/assets/sprites/",
                 ["RateLimiting:HubConnect:PermitLimit"] = HubConnectPermitLimit.ToString(),
                 ["RateLimiting:HubConnect:WindowSeconds"] = "60",
                 ["RateLimiting:HubConnect:QueueLimit"] = "0",

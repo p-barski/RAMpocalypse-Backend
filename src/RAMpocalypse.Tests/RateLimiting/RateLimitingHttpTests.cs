@@ -17,11 +17,11 @@ public class RateLimitingHttpTests
     public async Task StaticAssets_ReturnTooManyRequestsAfterPermitIsExhausted()
     {
         var client = factory.CreateClient();
-        using var firstResponse = await client.GetAsync("/assets/sprites/gg.png", TestContext.Current.CancellationToken);
+        using var firstResponse = await client.GetAsync("/assets/sprites/player_1.png", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
-        using var secondResponse = await client.GetAsync("/assets/sprites/gg.png", TestContext.Current.CancellationToken);
+        using var secondResponse = await client.GetAsync("/assets/sprites/player_1.png", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.TooManyRequests, secondResponse.StatusCode);
     }

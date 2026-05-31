@@ -1,21 +1,24 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using RAMpocalypse.Server.Configuration;
 using RAMpocalypse.Server.Database;
 using RAMpocalypse.Server.Extensions;
 using RAMpocalypse.Server.Hubs;
 using RAMpocalypse.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-var origin = "http://localhost:5173";
 
 builder.Configuration
 .AddJsonFile("gameconfig.json", optional: false, reloadOnChange: true)
 .AddJsonFile("assetinfo.json", optional: false, reloadOnChange: true);
+
+var serverConfig = ServerConfig.BindRequired(builder.Configuration);
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(origin)
+        policy.WithOrigins(serverConfig.FrontendOrigin)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -26,11 +29,13 @@ builder.Services.AddCors(options =>
   // as env vars: MongoDB__ConnectionString, MongoDB__DatabaseName
   // as dotnet user secrets: dotnet user-secrets set "MongoDB:ConnectionString" "value" etc
   .Configure<MongoDbConfig>(builder.Configuration.GetSection("MongoDB"))
+  // as env vars: Server__FrontendOrigin, Server__SpriteBaseUrl
+  .AddSingleton(Options.Create(serverConfig))
   .AddSingleton(TimeProvider.System)
   .AddSingleton<ISpriteInfo>(sp =>
   {
       var jsonMonitor = sp.GetRequiredService<IOptionsMonitor<SpriteInfoJson>>();
-      return new SpriteInfo(jsonMonitor, "http://localhost:5027/assets/sprites/");
+      return new SpriteInfo(jsonMonitor, serverConfig.SpriteBaseUrl);
   })
   .AddSingleton<IDatabase>(sp =>
   {
@@ -65,10 +70,10 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseCors()
-   .UseStaticAssetsResponseHeaders(origin)
+   .UseStaticAssetsResponseHeaders(serverConfig.FrontendOrigin)
    .UseRateLimiter();
 
-app.MapGet("/", () => "RAMpocalypse Server is running!");
+app.MapFallbackToFile("index.html");
 app.MapHub<GameHub>("/gamehub").RequireRateLimiting("hubConnect");
 app.MapStaticAssets().RequireRateLimiting("staticAssets");
 app.MapControllers().RequireRateLimiting("api");
