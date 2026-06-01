@@ -1,0 +1,61 @@
+name: Build frontend and deploy to Azure
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  AZURE_WEBAPP_NAME: RAMpocalypse
+  DOTNET_VERSION: "10.0.x"
+  NODE_VERSION: "26"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: p-barski/RAMpocalypse-Frontend
+          path: frontend
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_SERVER_URL: ${{ secrets.AZURE_SERVER_URL }}
+        run: npm run build
+
+      - name: Copy frontend assets
+        run: |
+          rm -rf wwwroot/app
+          mkdir -p wwwroot/app
+          cp -r frontend/dist/* wwwroot/app/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish backend
+        run: dotnet publish -c Release -o publish
+
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          package: publish

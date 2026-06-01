@@ -73,7 +73,7 @@ app.UseCors()
    .UseStaticAssetsResponseHeaders(serverConfig.FrontendOrigin)
    .UseRateLimiter();
 
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("/app/index.html");
 app.MapHub<GameHub>("/gamehub").RequireRateLimiting("hubConnect");
 app.MapStaticAssets().RequireRateLimiting("staticAssets");
 app.MapControllers().RequireRateLimiting("api");
