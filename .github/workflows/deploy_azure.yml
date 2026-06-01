@@ -51,7 +51,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Publish backend
-        run: dotnet publish -c Release -o publish
+        run: dotnet publish src/RAMpocalypse.Server/RAMpocalypse.Server.csproj -c Release -o publish
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
