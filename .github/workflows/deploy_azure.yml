@@ -41,9 +41,9 @@ jobs:
 
       - name: Copy frontend assets
         run: |
-          rm -rf wwwroot/app
-          mkdir -p wwwroot/app
-          cp -r frontend/dist/* wwwroot/app/
+          rm -rf src/RAMpocalypse.Server/wwwroot/app
+          mkdir -p src/RAMpocalypse.Server/wwwroot/app
+          cp -r frontend/dist/* src/RAMpocalypse.Server/wwwroot/app/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
