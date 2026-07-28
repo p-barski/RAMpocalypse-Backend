@@ -24,14 +24,27 @@ public readonly struct Position(double x, double y, double angle = 0)
         var cornerIndex = random.Next(0, 4); // 0 = top-left, 1 = top-right, 2 = bottom-left, 3 = bottom-right
         int oppositeIndex = 3 - cornerIndex;
 
-        Position[] corners = [
-            new (xOffset, yOffset, Math.PI),                         // top-left
-            new (gameWidth - xOffset, yOffset, Math.PI),             // top-right
-            new (xOffset, gameHeight - yOffset, 0),                    // bottom-left
-            new (gameWidth - xOffset, gameHeight - yOffset, 0)         // bottom-right
-        ];
-
+        var corners = GetCorners(gameWidth, gameHeight, xOffset, yOffset);
         return (corners[cornerIndex], corners[oppositeIndex]);
+    }
+
+    public static Position GetRandomUnoccupiedCorner(
+        IEnumerable<Position> occupiedPositions, int gameWidth, int gameHeight, double xOffset, double yOffset)
+    {
+        var corners = GetCorners(gameWidth, gameHeight, xOffset, yOffset);
+
+        var occupiedCorners = occupiedPositions
+            .Select(p => GetCornerIndex(p, gameWidth, gameHeight))
+            .ToHashSet();
+        var availableCorners = Enumerable.Range(0, corners.Length)
+            .Where(i => !occupiedCorners.Contains(i))
+            .ToList();
+
+        // Shouldn't happen if the lobby actually has space, but fall back to a corner rather than throwing
+        if (availableCorners.Count == 0) return corners[0];
+
+        var random = new Random();
+        return corners[availableCorners[random.Next(availableCorners.Count)]];
     }
 
     public static double CalculateDistance(Position p1, Position p2)
@@ -77,5 +90,28 @@ public readonly struct Position(double x, double y, double angle = 0)
         double fx = Math.Sin(angle);
         double fy = -Math.Cos(angle);
         return fx * d.X + fy * d.Y > 0;
+    }
+
+    private static Position[] GetCorners(int gameWidth, int gameHeight, double xOffset, double yOffset)
+    {
+        return [
+            new (xOffset, yOffset, Math.PI),                   // top-left
+            new (gameWidth - xOffset, yOffset, Math.PI),       // top-right
+            new (xOffset, gameHeight - yOffset, 0),            // bottom-left
+            new (gameWidth - xOffset, gameHeight - yOffset, 0) // bottom-right
+        ];
+    }
+
+    private static int GetCornerIndex(Position position, int gameWidth, int gameHeight)
+    {
+        var isTop = position.Y < gameHeight / 2.0;
+        var isLeft = position.X < gameWidth / 2.0;
+        return (isTop, isLeft) switch
+        {
+            (true, true) => 0,
+            (true, false) => 1,
+            (false, true) => 2,
+            (false, false) => 3,
+        };
     }
 }

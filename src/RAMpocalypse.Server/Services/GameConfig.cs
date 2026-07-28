@@ -11,7 +11,7 @@ public class GameConfig : IGameConfig
     public double DashSpeedMultiplier { get; set; } = 4.0;
     public int DashCooldownMs { get; set; } = 1000;
     public int DashDurationMs { get; set; } = 250;
-    public MaxNumberOfPlayers LobbySize { get; set; } = MaxNumberOfPlayers.Two;
+    public MaxNumberOfPlayers LobbySize { get; set; } = MaxNumberOfPlayers.Four;
     public int MeleeCooldownMs { get; set; } = 700;
     public int ProjectileCooldownMs { get; set; } = 500;
     public int SpecialCooldownMs { get; set; } = 3000;

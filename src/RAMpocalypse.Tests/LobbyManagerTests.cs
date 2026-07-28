@@ -8,10 +8,10 @@ namespace RAMpocalypse.Tests;
 public class LobbyManagerTests
 {
     private static Player NewPlayer(string id) => new(id, new("t"));
-    private static LobbyManager CreateSut()
+    private static LobbyManager CreateSut(MaxNumberOfPlayers maxNumberOfPlayers = MaxNumberOfPlayers.Four)
     {
         var gameConfig = Substitute.For<IGameConfig>();
-        gameConfig.LobbySize.Returns(MaxNumberOfPlayers.Two);
+        gameConfig.LobbySize.Returns(maxNumberOfPlayers);
         return new LobbyManager(gameConfig, TimeProvider.System);
     }
 
@@ -88,6 +88,35 @@ public class LobbyManagerTests
         sut.RemoveLobby(lobby);
 
         Assert.Empty(sut.GetActiveLobbies());
+    }
+
+    [Fact]
+    public void TryAddPlayerToLobby_LobbyHasRoom_AddsPlayerToLobby()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.LobbySize.Returns(MaxNumberOfPlayers.Four);
+        var sut = new LobbyManager(gameConfig, TimeProvider.System);
+        var lobby = sut.CreateLobby(NewPlayer("a"), NewPlayer("b"));
+        var joiner = NewPlayer("c");
+
+        var result = sut.TryAddPlayerToLobby(joiner, 1920, 1080, 100, 100);
+
+        Assert.Same(lobby, result);
+        Assert.Contains(joiner, lobby.Players);
+        Assert.Same(lobby, sut.GetLobbyByPlayer(joiner));
+    }
+
+    [Fact]
+    public void TryAddPlayerToLobby_NoLobbyHasRoom_ReturnsNull()
+    {
+        var sut = CreateSut(MaxNumberOfPlayers.Two);
+        sut.CreateLobby(NewPlayer("a"), NewPlayer("b"));
+        var joiner = NewPlayer("c");
+
+        var result = sut.TryAddPlayerToLobby(joiner, 1920, 1080, 100, 100);
+
+        Assert.Null(result);
+        Assert.Null(sut.GetLobbyByPlayer(joiner));
     }
 
     [Fact]

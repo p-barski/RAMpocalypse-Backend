@@ -70,13 +70,40 @@ public class GameHub(
         if (result.Lobby is null) return;
 
         logger.LogInformation(
-            "Lobby created - LobbyId: {LobbyId}",
+            "Lobby created/joined - LobbyId: {LobbyId}",
             result.Lobby.Id);
 
-        playerFactory.RandomizePlayersSprites(result.Lobby.Players);
+        // Only randomize sprites for players newly entering the lobby, not ones already playing in it
+        playerFactory.RandomizePlayersSprites(result.PlayersToNotify);
         foreach (var lobbyPlayer in result.PlayersToNotify)
         {
             await SendLobbyStartAsync(lobbyPlayer, result.Lobby);
+        }
+        foreach (var existingPlayer in result.ExistingPlayersToNotify)
+        {
+            foreach (var newPlayer in result.PlayersToNotify)
+            {
+                var connectionId = playerConnectionService.GetConnectionIdByPlayer(existingPlayer);
+                if (connectionId is null)
+                {
+                    logger.LogWarning(
+                        "Could not find connection ID for player {PlayerId}",
+                        existingPlayer.Id);
+                    return;
+                }
+
+                try
+                {
+                    await Clients.Client(connectionId).PlayerJoinedLobby(newPlayer);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Failed to send player joined lobby to player {PlayerId}",
+                        existingPlayer.Id);
+                }
+            }
         }
     }
 
@@ -99,6 +126,8 @@ public class GameHub(
                 Context.ConnectionId);
             return Task.CompletedTask;
         }
+
+        if (!player.IsAlive) return Task.CompletedTask;
 
         var result = gameService.ValidateAndUpdatePosition(player, newPosition, lobby);
 
@@ -137,6 +166,9 @@ public class GameHub(
                 Context.ConnectionId);
             return Task.FromResult(false);
         }
+
+        if (!player.IsAlive) return Task.FromResult(false);
+
         return Task.FromResult(gameService.ValidateDash(player, xVelocity, yVelocity));
     }
 

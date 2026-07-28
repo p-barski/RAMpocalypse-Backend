@@ -9,6 +9,7 @@ public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : I
     private readonly ConcurrentDictionary<string, GameLobby> lobbies = [];
     private readonly IGameConfig gameConfig = gameConfig;
     private readonly TimeProvider timeProvider = timeProvider;
+    private readonly Lock lobbyJoinLock = new();
 
     private string GenerateLobbyId()
     {
@@ -44,24 +45,48 @@ public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : I
         return lobby;
     }
 
+    public GameLobby? TryAddPlayerToLobby(Player player, int gameWidth, int gameHeight, double xOffset, double yOffset)
+    {
+        lock (lobbyJoinLock)
+        {
+            foreach (var kvp in lobbies)
+            {
+                var lobby = kvp.Value;
+                if (lobby.Players.Count < (int)lobby.MaxNumberOfPlayers)
+                {
+                    var positions = lobby.Players.Select(p => p.Position);
+                    player.Position = Position.GetRandomUnoccupiedCorner(positions, gameWidth, gameHeight, xOffset, yOffset);
+                    lobby.AddPlayer(player);
+                    playerToLobbyMap[player] = lobby;
+                    return lobby;
+                }
+            }
+            return null;
+        }
+    }
+
     public List<Player> RemovePlayerFromLobby(Player player)
     {
         if (!playerToLobbyMap.TryRemove(player, out var lobby))
         {
             return [];
         }
-        lobby.Players.Remove(player);
 
-        // People can't join lobby that already started, so remove the lobby if there is only one player left
-        if (lobby.Players.Count == 1)
+        lock (lobbyJoinLock)
         {
-            foreach (var lobbyPlayer in lobby.Players)
+            lobby.Players.Remove(player);
+
+            // A single remaining player has no one left to play against, so the lobby is removed
+            if (lobby.Players.Count == 1)
             {
-                playerToLobbyMap.TryRemove(lobbyPlayer, out _);
+                foreach (var lobbyPlayer in lobby.Players)
+                {
+                    playerToLobbyMap.TryRemove(lobbyPlayer, out _);
+                }
+                lobbies.TryRemove(lobby.Id, out _);
             }
-            lobbies.TryRemove(lobby.Id, out _);
+            return lobby.Players;
         }
-        return lobby.Players;
     }
 
     public void RemoveLobby(GameLobby lobby)

@@ -7,7 +7,7 @@
     "DashSpeedMultiplier": 4.0,
     "DashCooldownMs": 1000,
     "DashDurationMs": 250,
-    "LobbySize": 2,
+    "LobbySize": 4,
     "MeleeCooldownMs": 700,
     "ProjectileCooldownMs": 500,
     "SpecialCooldownMs": 3000,

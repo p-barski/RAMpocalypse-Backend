@@ -36,27 +36,43 @@ public class MatchmakingService(
             }
         }
 
-        if (otherPlayer == null)
-        {
-            playerQueue.Enqueue(player);
-            return new MatchmakingResult
-            {
-                Lobby = null,
-                PlayersToNotify = []
-            };
-        }
-
         // Dimensions should be the same for both players, at least for now
         var xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
         var yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
-        var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
-        player.Position = corner1;
-        otherPlayer.Position = corner2;
-        var lobby = lobbyManager.CreateLobby(player, otherPlayer);
+        if (otherPlayer != null)
+        {
+            var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
+            player.Position = corner1;
+            otherPlayer.Position = corner2;
+            var lobby = lobbyManager.CreateLobby(player, otherPlayer);
+            return new MatchmakingResult
+            {
+                Lobby = lobby,
+                PlayersToNotify = [player, otherPlayer]
+            };
+        }
+        var joinedLobby = lobbyManager.TryAddPlayerToLobby(
+            player,
+            gameConfig.GameWidth,
+            gameConfig.GameHeight,
+            xOffset,
+            yOffset);
+        if (joinedLobby != null)
+        {
+            var existingPlayers = joinedLobby.Players.Where(p => p.Id != player.Id).ToList();
+            return new MatchmakingResult
+            {
+                Lobby = joinedLobby,
+                PlayersToNotify = [player],
+                ExistingPlayersToNotify = existingPlayers
+            };
+        }
+
+        playerQueue.Enqueue(player);
         return new MatchmakingResult
         {
-            Lobby = lobby,
-            PlayersToNotify = [player, otherPlayer]
+            Lobby = null,
+            PlayersToNotify = []
         };
     }
 

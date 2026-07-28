@@ -6,4 +6,5 @@ public class MatchmakingResult
 {
     public GameLobby? Lobby { get; set; }
     public List<Player> PlayersToNotify { get; set; } = [];
+    public List<Player> ExistingPlayersToNotify { get; set; } = [];
 }

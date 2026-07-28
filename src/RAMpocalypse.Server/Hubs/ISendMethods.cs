@@ -8,6 +8,7 @@ public interface ISendMethods
     Task PlayerPositionUpdated(string playerId, Position position);
     Task PositionCorrected(Position correctedPosition);
     Task LobbyStarted(string lobbyId, List<Player> players);
+    Task PlayerJoinedLobby(Player player);
     Task PlayerDied(string playerId);
     Task PlayerRespawned(string playerId, Position position);
     Task PlayerLeftLobby(string playerId);
