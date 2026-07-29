@@ -27,5 +27,6 @@ public interface IGameConfig
     int ProjectileDamage { get; }
     int SpecialDamage { get; }
     int RespawnCooldownMs { get; }
+    int SpawnProtectionMs { get; }
     int MaxMessageLength { get; }
 }

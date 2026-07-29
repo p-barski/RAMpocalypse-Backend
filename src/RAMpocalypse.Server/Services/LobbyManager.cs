@@ -37,6 +37,8 @@ public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : I
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var lobby = new GameLobby(GenerateLobbyId(), gameConfig.LobbySize, utcNow);
+        player1.JoinTime = utcNow;
+        player2.JoinTime = utcNow;
         lobby.AddPlayer(player1);
         lobby.AddPlayer(player2);
         playerToLobbyMap[player1] = lobby;
@@ -56,6 +58,7 @@ public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : I
                 {
                     var positions = lobby.Players.Select(p => p.Position);
                     player.Position = Position.GetRandomUnoccupiedCorner(positions, gameWidth, gameHeight, xOffset, yOffset);
+                    player.JoinTime = timeProvider.GetUtcNow().UtcDateTime;
                     lobby.AddPlayer(player);
                     playerToLobbyMap[player] = lobby;
                     return lobby;

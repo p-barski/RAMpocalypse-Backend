@@ -7,6 +7,142 @@ namespace RAMpocalypse.Tests;
 
 public class GameServiceTests
 {
+    // Places `target` just in front of `attacker` (both facing angle 0) so melee/special/projectile
+    // hit-detection registers a hit, unless spawn protection filters the target out first.
+    private static (Player attacker, Player target, GameLobby lobby) CreateAttackerAndTargetInRange(DateTime lobbyCreationTime)
+    {
+        var weaponSprite = new SpriteData("weapon.png", 0, 0, 1);
+        var attacker = new Player("attacker", new SpriteData("attacker.png", 10, 10, 1))
+        {
+            Position = new Position(500, 500, 0),
+        };
+        attacker.SubEntities.Add(new SubEntity(new Position(0, 0), weaponSprite, "weapon_attacker"));
+
+        var target = new Player("target", new SpriteData("target.png", 10, 10, 1))
+        {
+            Position = new Position(500, 480, 0),
+        };
+
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, lobbyCreationTime);
+        lobby.AddPlayer(attacker);
+        lobby.AddPlayer(target);
+        return (attacker, target, lobby);
+    }
+
+    [Fact]
+    public void PerformMeleeAttack_TargetNotSpawnProtected_HitsAndDamagesTarget()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.MeleeRange.Returns(1000.0);
+        gameConfig.MeleeDamage.Returns(25);
+        gameConfig.SpawnProtectionMs.Returns(1000);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, target, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        target.JoinTime = DateTime.MinValue;
+
+        var sut = new GameService(gameConfig, timeProvider);
+        var result = sut.PerformMeleeAttack(attacker, lobby);
+
+        Assert.True(result.Success);
+        Assert.Single(result.HitPlayers);
+        Assert.Equal(75, target.Health);
+    }
+
+    [Fact]
+    public void PerformMeleeAttack_TargetRecentlyJoined_IsSpawnProtectedAndTakesNoDamage()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.MeleeRange.Returns(1000.0);
+        gameConfig.MeleeDamage.Returns(25);
+        gameConfig.SpawnProtectionMs.Returns(1000);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, target, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        target.JoinTime = timeProvider.GetUtcNow().UtcDateTime;
+
+        var sut = new GameService(gameConfig, timeProvider);
+        var result = sut.PerformMeleeAttack(attacker, lobby);
+
+        Assert.True(result.Success);
+        Assert.Empty(result.HitPlayers);
+        Assert.Equal(100, target.Health);
+        Assert.True(target.IsAlive);
+    }
+
+    [Fact]
+    public void HandleSpecialExplosion_TargetRecentlyJoined_IsSpawnProtectedAndTakesNoDamage()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.GameWidth.Returns(1920);
+        gameConfig.GameHeight.Returns(1080);
+        gameConfig.SpecialAttackRange.Returns(100.0);
+        gameConfig.SpecialDamage.Returns(40);
+        gameConfig.SpawnProtectionMs.Returns(1000);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, target, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        target.JoinTime = timeProvider.GetUtcNow().UtcDateTime;
+        attacker.Position = new Position(-10000, -10000, 0); // out of explosion range, so only the target's protection is under test
+
+        var attackEntity = new AttackEntity
+        {
+            Id = "atk1",
+            OwnerId = attacker.Id,
+            Type = AttackType.Special,
+            CurrentPosition = new Position(500, 500, 0),
+            VelocityVector = new Position(0, 0, 0),
+            Lifetime = 0,
+            CreationTime = timeProvider.GetUtcNow().ToUnixTimeMilliseconds(),
+        };
+
+        var sut = new GameService(gameConfig, timeProvider);
+        var result = sut.HandleSpecialExplosion(attackEntity, lobby);
+
+        Assert.Empty(result.HitPlayers);
+        Assert.Equal(100, target.Health);
+        Assert.True(target.IsAlive);
+    }
+
+    [Fact]
+    public void HandleProjectileHit_TargetRecentlyJoined_IsSpawnProtectedAndTakesNoDamage()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.ProjectileDamage.Returns(15);
+        gameConfig.SpawnProtectionMs.Returns(1000);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var target = new Player("target", new SpriteData("target.png", 20, 20, 1))
+        {
+            Position = new Position(500, 500, 0),
+            JoinTime = timeProvider.GetUtcNow().UtcDateTime,
+        };
+        var lobby = new GameLobby("l1", MaxNumberOfPlayers.Four, timeProvider.GetUtcNow().UtcDateTime);
+        lobby.AddPlayer(target);
+
+        var attackEntity = new AttackEntity
+        {
+            Id = "atk1",
+            OwnerId = "attacker",
+            Type = AttackType.Projectile,
+            CurrentPosition = new Position(500, 500, 0),
+            VelocityVector = new Position(0, 0, 0),
+            Lifetime = 3000,
+            CreationTime = timeProvider.GetUtcNow().ToUnixTimeMilliseconds(),
+        };
+        lobby.LongLivedAttacks[attackEntity.Id] = attackEntity;
+
+        var sut = new GameService(gameConfig, timeProvider);
+        var result = sut.HandleProjectileHit(attackEntity.Id, target, lobby);
+
+        Assert.False(result.Success);
+        Assert.Empty(result.HitPlayers);
+        Assert.Equal(100, target.Health);
+        Assert.True(target.IsAlive);
+        Assert.True(lobby.LongLivedAttacks.ContainsKey(attackEntity.Id));
+    }
+
+
     [Fact]
     public void ValidateAndUpdatePosition_ValidMovement_UpdatesPlayerAndReturnsNoCorrection()
     {

@@ -120,6 +120,38 @@ public class LobbyManagerTests
     }
 
     [Fact]
+    public void CreateLobby_UpdatesJoinTimeOnBothPlayers()
+    {
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.LobbySize.Returns(MaxNumberOfPlayers.Four);
+        var sut = new LobbyManager(gameConfig, timeProvider);
+        var a = NewPlayer("a");
+        var b = NewPlayer("b");
+
+        sut.CreateLobby(a, b);
+
+        Assert.Equal(timeProvider.GetUtcNow().UtcDateTime, a.JoinTime);
+        Assert.Equal(timeProvider.GetUtcNow().UtcDateTime, b.JoinTime);
+    }
+
+    [Fact]
+    public void TryAddPlayerToLobby_UpdatesJoinTimeOnJoiningPlayer()
+    {
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.LobbySize.Returns(MaxNumberOfPlayers.Four);
+        var sut = new LobbyManager(gameConfig, timeProvider);
+        sut.CreateLobby(NewPlayer("a"), NewPlayer("b"));
+        var joiner = NewPlayer("c");
+
+        timeProvider.SetUtcMilliseconds(2_000_000);
+        sut.TryAddPlayerToLobby(joiner, 1920, 1080, 100, 100);
+
+        Assert.Equal(timeProvider.GetUtcNow().UtcDateTime, joiner.JoinTime);
+    }
+
+    [Fact]
     public void RemovePlayerFromLobby_WhenLobbyWouldHaveSinglePlayer_Left_RemovesEntireLobby()
     {
         var sut = CreateSut();

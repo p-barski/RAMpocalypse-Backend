@@ -23,6 +23,7 @@
     "ProjectileDamage": 15,
     "SpecialDamage": 20,
     "RespawnCooldownMs": 3000,
+    "SpawnProtectionMs": 1000,
     "MaxMessageLength": 100
   }
 }

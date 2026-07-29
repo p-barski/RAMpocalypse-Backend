@@ -12,6 +12,11 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
     private string GenerateAttackId() =>
         $"attack_{timeProvider.GetUtcNow().ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}";
 
+    // Newly joined players are briefly untargetable, so they can't be hit before their own
+    // client has finished the join sequence and is able to move/fight back
+    private bool IsSpawnProtected(Player player, DateTime now) =>
+        (now - player.JoinTime).TotalMilliseconds < gameConfig.SpawnProtectionMs;
+
     public PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby)
     {
         var updateTime = timeProvider.GetUtcNow().UtcDateTime;
@@ -114,7 +119,7 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         attacker.LastAnyAttackTime = attackTime;
         var attackPosition = attacker.GetAttackPosition();
         var hitPlayerInfos = new List<HitPlayerInfo>();
-        foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive))
+        foreach (var otherPlayer in lobby.Players.Where(p => p != attacker && p.IsAlive && !IsSpawnProtected(p, attackTime)))
         {
             var hitDetected = false;
             foreach (var (corner1, corner2) in otherPlayer.GetHitboxLines())
@@ -253,7 +258,7 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
 
         var hitPlayerInfos = new List<HitPlayerInfo>();
         var rangeSquared = gameConfig.SpecialAttackRange * gameConfig.SpecialAttackRange;
-        foreach (var otherPlayer in lobby.Players.Where(p => p.IsAlive))
+        foreach (var otherPlayer in lobby.Players.Where(p => p.IsAlive && !IsSpawnProtected(p, explosionTime)))
         {
             var hitDetected = false;
             foreach (var (corner1, corner2) in otherPlayer.GetHitboxLines())
@@ -296,11 +301,15 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
 
     public AttackResult HandleProjectileHit(string attackId, Player hitPlayer, GameLobby lobby)
     {
-        if (!hitPlayer.IsAlive || !lobby.LongLivedAttacks.TryGetValue(attackId, out var attackEntity))
+        if (!lobby.LongLivedAttacks.TryGetValue(attackId, out var attackEntity))
             return new AttackResult();
 
         var utcNow = timeProvider.GetUtcNow();
         var now = utcNow.UtcDateTime;
+
+        if (!hitPlayer.IsAlive || IsSpawnProtected(hitPlayer, now))
+            return new AttackResult();
+
         var deltaTime = (utcNow.ToUnixTimeMilliseconds() - attackEntity.CreationTime) / 1000.0;
         var currentAttackPosition = attackEntity.CurrentPosition + attackEntity.VelocityVector * deltaTime;
         var halfWidth = hitPlayer.SpriteData.Width * hitPlayer.SpriteData.ScaleFactor / 2;

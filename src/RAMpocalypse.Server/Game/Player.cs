@@ -23,6 +23,7 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastAnyAttackTime { get; set; } = DateTime.MinValue;
     public DateTime DeathTime { get; set; } = DateTime.MinValue;
+    public DateTime JoinTime { get; set; } = DateTime.MinValue;
     public DateTime LastDashTime { get; set; } = DateTime.MinValue;
     public Position DashVelocity { get; set; }
     public bool IsDashing { get; set; } = false;
@@ -36,6 +37,7 @@ public class Player(string id, SpriteData spriteData)
         LastSpecialAttackTime = DateTime.MinValue;
         LastAnyAttackTime = DateTime.MinValue;
         DeathTime = DateTime.MinValue;
+        JoinTime = DateTime.MinValue;
     }
     public (Position, Position)[] GetHitboxLines()
     {
