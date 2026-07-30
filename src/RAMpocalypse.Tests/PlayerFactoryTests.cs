@@ -141,6 +141,38 @@ public class PlayerFactoryTests
     }
 
     [Fact]
+    public void RandomizePlayersSprites_SpriteTakenByExistingPlayer_JoinerGetsDifferentOne()
+    {
+        var playerSprite1 = CreatePlayerSprite("player_1.png");
+        var playerSprite2 = CreatePlayerSprite("player_2.png");
+        var weaponSprite = CreateWeaponSprite("weapon_1.png");
+        var sut = CreateFactory([playerSprite1, playerSprite2], [weaponSprite]);
+        var existingPlayer = CreateTestPlayer();
+        existingPlayer.SpriteData = playerSprite1;
+        var joiner = CreateTestPlayer();
+
+        sut.RandomizePlayersSprites([joiner], [existingPlayer]);
+
+        Assert.Equal(playerSprite2.URL, joiner.SpriteData.URL);
+    }
+
+    [Fact]
+    public void RandomizePlayersSprites_AllSpritesTakenByExistingPlayers_JoinerFallsBackToReusingOne()
+    {
+        var playerSprite = CreatePlayerSprite("player_1.png");
+        var weaponSprite = CreateWeaponSprite("weapon_1.png");
+        var sut = CreateFactory([playerSprite], [weaponSprite]);
+        var existingPlayer = CreateTestPlayer();
+        existingPlayer.SpriteData = playerSprite;
+        var joiner = CreateTestPlayer();
+
+        var exception = Record.Exception(() => sut.RandomizePlayersSprites([joiner], [existingPlayer]));
+
+        Assert.Null(exception);
+        Assert.Equal(playerSprite.URL, joiner.SpriteData.URL);
+    }
+
+    [Fact]
     public void RandomizePlayersSprites_WeaponOffsetAdjustedBasedOnSpriteSize()
     {
         SpriteData playerSprite = new("player_1.png", 30, 20, 3.0, SpriteType.Player);

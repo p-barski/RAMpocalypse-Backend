@@ -73,8 +73,7 @@ public class GameHub(
             "Lobby created/joined - LobbyId: {LobbyId}",
             result.Lobby.Id);
 
-        // Only randomize sprites for players newly entering the lobby, not ones already playing in it
-        playerFactory.RandomizePlayersSprites(result.PlayersToNotify);
+        playerFactory.RandomizePlayersSprites(result.PlayersToNotify, result.ExistingPlayersToNotify);
         foreach (var lobbyPlayer in result.PlayersToNotify)
         {
             await SendLobbyStartAsync(lobbyPlayer, result.Lobby);
