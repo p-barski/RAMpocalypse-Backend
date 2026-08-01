@@ -29,4 +29,5 @@ public class GameConfig : IGameConfig
     public int RespawnCooldownMs { get; set; } = 3000;
     public int SpawnProtectionMs { get; set; } = 1000;
     public int MaxMessageLength { get; set; } = 100;
+    public int MaxNameLength { get; set; } = 20;
 }

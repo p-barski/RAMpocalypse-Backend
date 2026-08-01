@@ -24,6 +24,7 @@
     "SpecialDamage": 20,
     "RespawnCooldownMs": 3000,
     "SpawnProtectionMs": 1000,
-    "MaxMessageLength": 100
+    "MaxMessageLength": 100,
+    "MaxNameLength": 20
   }
 }

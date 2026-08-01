@@ -19,7 +19,8 @@ public sealed class HubMethodRateLimiterFactory(
         {
             nameof(GameHub.UpdatePlayerPosition) => CreatePositionLimiter(options.PositionBurstMultiplier),
             nameof(GameHub.SendMessage) => CreateFixedWindowLimiter(options.Chat),
-            nameof(GameHub.GetPlayerId) or nameof(GameHub.RequestMatchmaking) or nameof(GameHub.LeaveGame) =>
+            nameof(GameHub.GetPlayerId) or nameof(GameHub.RequestMatchmaking) or nameof(GameHub.LeaveGame)
+                or nameof(GameHub.SetPlayerName) =>
                 CreateFixedWindowLimiter(options.Control),
             _ => CreateFixedWindowLimiter(options.Gameplay),
         };

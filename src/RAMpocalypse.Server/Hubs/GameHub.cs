@@ -106,6 +106,34 @@ public class GameHub(
         }
     }
 
+    public Task SetPlayerName(string name)
+    {
+        var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (player is null)
+        {
+            logger.LogWarning(
+                "SetPlayerName called but player not found - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return Task.CompletedTask;
+        }
+
+        name = name.Trim();
+        if (name.Length > gameConfig.MaxNameLength)
+        {
+            logger.LogWarning(
+                "SetPlayerName called with name of length {NameLength} which is greater than " +
+                "the maximum length: {MaxNameLength} - ConnectionId: {ConnectionId}",
+                name.Length, gameConfig.MaxNameLength, Context.ConnectionId);
+            return Task.CompletedTask;
+        }
+
+        player.Name = name;
+        logger.LogInformation(
+            "SetPlayerName called - PlayerId: {PlayerId}, ConnectionId: {ConnectionId}",
+            player.Id, Context.ConnectionId);
+        return Task.CompletedTask;
+    }
+
     public Task UpdatePlayerPosition(Position newPosition)
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
@@ -269,7 +297,7 @@ public class GameHub(
             Text = message,
             Type = type,
             OwnerId = player.Id,
-            OwnerName = player.Id[^10..],
+            OwnerName = string.IsNullOrWhiteSpace(player.Name) ? player.Id[^10..] : player.Name,
             Timestamp = utcNow.UtcDateTime,
         };
 

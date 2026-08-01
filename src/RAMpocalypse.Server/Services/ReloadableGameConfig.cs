@@ -36,4 +36,5 @@ public class ReloadableGameConfig : IGameConfig
     public int RespawnCooldownMs => cache.RespawnCooldownMs;
     public int SpawnProtectionMs => cache.SpawnProtectionMs;
     public int MaxMessageLength => cache.MaxMessageLength;
+    public int MaxNameLength => cache.MaxNameLength;
 }

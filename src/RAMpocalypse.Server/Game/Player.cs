@@ -11,6 +11,7 @@ public class SubEntity(Position position, SpriteData spriteData, string id)
 public class Player(string id, SpriteData spriteData)
 {
     public string Id { get; init; } = id;
+    public string Name { get; set; } = "";
     public Position Position { get; set; } = new Position(0, 0);
     public SpriteData SpriteData { get; set; } = spriteData;
     public List<SubEntity> SubEntities { get; set; } = [];

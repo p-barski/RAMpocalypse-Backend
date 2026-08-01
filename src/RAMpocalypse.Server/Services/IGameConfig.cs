@@ -29,4 +29,5 @@ public interface IGameConfig
     int RespawnCooldownMs { get; }
     int SpawnProtectionMs { get; }
     int MaxMessageLength { get; }
+    int MaxNameLength { get; }
 }
