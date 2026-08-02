@@ -1,6 +1,6 @@
 # RAMpocalypse
 
-Online 2-player battle arena.
+Online up to 4-player battle arena.
 
 ![Example](example.jpg)
 
