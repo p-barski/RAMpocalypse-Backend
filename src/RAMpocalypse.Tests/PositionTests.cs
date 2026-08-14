@@ -5,24 +5,37 @@ namespace RAMpocalypse.Tests;
 
 public class PositionTests
 {
-    private static void AssertSpawnAngle(Position position, double yOffset, int gameHeight)
+    private static void AssertSpawnAngle(Position position, double xOffset, double yOffset, int gameWidth, int gameHeight)
     {
-        if (position.Y == yOffset)
+        var isTop = position.Y == yOffset;
+        var isBottom = position.Y == gameHeight - yOffset;
+        var isLeft = position.X == xOffset;
+        var isRight = position.X == gameWidth - xOffset;
+
+        if (isTop && isLeft)
         {
-            Assert.Equal(Math.PI, position.Angle);
+            Assert.Equal(3 * Math.PI / 4, position.Angle); // faces south-east, toward center
         }
-        else if (position.Y == gameHeight - yOffset)
+        else if (isTop && isRight)
         {
-            Assert.Equal(0, position.Angle);
+            Assert.Equal(-3 * Math.PI / 4, position.Angle); // faces south-west, toward center
+        }
+        else if (isBottom && isLeft)
+        {
+            Assert.Equal(Math.PI / 4, position.Angle); // faces north-east, toward center
+        }
+        else if (isBottom && isRight)
+        {
+            Assert.Equal(-Math.PI / 4, position.Angle); // faces north-west, toward center
         }
         else
         {
-            Assert.Fail($"Unexpected spawn Y coordinate: {position.Y}");
+            Assert.Fail($"Unexpected spawn coordinate: ({position.X}, {position.Y})");
         }
     }
 
     [Fact]
-    public void GetRandomOppositeCorners_TopCornersFaceDown_BottomCornersFaceUp()
+    public void GetRandomOppositeCorners_CornersFaceDiagonallyTowardCenter()
     {
         const int gameWidth = 800;
         const int gameHeight = 600;
@@ -33,8 +46,8 @@ public class PositionTests
         {
             var (corner1, corner2) = Position.GetRandomOppositeCorners(gameWidth, gameHeight, xOffset, yOffset);
 
-            AssertSpawnAngle(corner1, yOffset, gameHeight);
-            AssertSpawnAngle(corner2, yOffset, gameHeight);
+            AssertSpawnAngle(corner1, xOffset, yOffset, gameWidth, gameHeight);
+            AssertSpawnAngle(corner2, xOffset, yOffset, gameWidth, gameHeight);
         }
     }
 

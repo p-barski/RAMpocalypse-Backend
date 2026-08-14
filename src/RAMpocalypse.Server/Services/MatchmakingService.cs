@@ -37,11 +37,12 @@ public class MatchmakingService(
         }
 
         // Dimensions should be the same for both players, at least for now
-        var xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
-        var yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
+        var halfWidth = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
+        var halfHeight = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
+        var offset = Position.GetDiagonalSpawnOffset(halfWidth, halfHeight);
         if (otherPlayer != null)
         {
-            var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
+            var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, offset, offset);
             player.Position = corner1;
             otherPlayer.Position = corner2;
             var lobby = lobbyManager.CreateLobby(player, otherPlayer);
@@ -55,8 +56,8 @@ public class MatchmakingService(
             player,
             gameConfig.GameWidth,
             gameConfig.GameHeight,
-            xOffset,
-            yOffset);
+            offset,
+            offset);
         if (joinedLobby != null)
         {
             var existingPlayers = joinedLobby.Players.Where(p => p.Id != player.Id).ToList();

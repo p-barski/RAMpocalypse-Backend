@@ -92,13 +92,16 @@ public readonly struct Position(double x, double y, double angle = 0)
         return fx * d.X + fy * d.Y > 0;
     }
 
+    public static double GetDiagonalSpawnOffset(double halfWidth, double halfHeight) =>
+        (halfWidth + halfHeight) / Math.Sqrt(2);
+
     private static Position[] GetCorners(int gameWidth, int gameHeight, double xOffset, double yOffset)
     {
         return [
-            new (xOffset, yOffset, Math.PI),                   // top-left
-            new (gameWidth - xOffset, yOffset, Math.PI),       // top-right
-            new (xOffset, gameHeight - yOffset, 0),            // bottom-left
-            new (gameWidth - xOffset, gameHeight - yOffset, 0) // bottom-right
+            new (xOffset, yOffset, 3 * Math.PI / 4),                    // top-left, facing south-east toward center
+            new (gameWidth - xOffset, yOffset, -3 * Math.PI / 4),       // top-right, facing south-west toward center
+            new (xOffset, gameHeight - yOffset, Math.PI / 4),           // bottom-left, facing north-east toward center
+            new (gameWidth - xOffset, gameHeight - yOffset, -Math.PI / 4) // bottom-right, facing north-west toward center
         ];
     }
 

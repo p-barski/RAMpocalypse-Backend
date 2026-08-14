@@ -375,9 +375,10 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
             };
         }
 
-        var xOffset = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
-        var yOffset = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
-        var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
+        var halfWidth = player.SpriteData.Width * player.SpriteData.ScaleFactor / 2.0;
+        var halfHeight = player.SpriteData.Height * player.SpriteData.ScaleFactor / 2.0;
+        var offset = Position.GetDiagonalSpawnOffset(halfWidth, halfHeight);
+        var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, offset, offset);
 
         player.Position = respawnPosition;
         player.Health = player.MaxHealth;
