@@ -50,8 +50,9 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var minHeight = player.SpriteData.Height * halfScaleFactor;
         var maxWidth = gameConfig.GameWidth - minWidth;
         var maxHeight = gameConfig.GameHeight - minHeight;
+        // Angle isn't validated, so always take the client's, otherwise correction would keep the stale one
         finalPosition = new(Math.Clamp(finalPosition.X, minWidth, maxWidth),
-            Math.Clamp(finalPosition.Y, minHeight, maxHeight), finalPosition.Angle);
+            Math.Clamp(finalPosition.Y, minHeight, maxHeight), newPosition.Angle);
         newPosition = new(Math.Clamp(newPosition.X, minWidth, maxWidth),
             Math.Clamp(newPosition.Y, minHeight, maxHeight), newPosition.Angle);
 
@@ -314,13 +315,9 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var currentAttackPosition = attackEntity.CurrentPosition + attackEntity.VelocityVector * deltaTime;
         var halfWidth = hitPlayer.SpriteData.Width * hitPlayer.SpriteData.ScaleFactor / 2;
         var halfHeight = hitPlayer.SpriteData.Height * hitPlayer.SpriteData.ScaleFactor / 2;
-        var cos = Math.Cos(-hitPlayer.Position.Angle);
-        var sin = Math.Sin(-hitPlayer.Position.Angle);
         var dx = currentAttackPosition.X - hitPlayer.Position.X;
         var dy = currentAttackPosition.Y - hitPlayer.Position.Y;
-        var localX = dx * cos - dy * sin;
-        var localY = dx * sin + dy * cos;
-        if (!(Math.Abs(localX) <= halfWidth && Math.Abs(localY) <= halfHeight))
+        if (!(Math.Abs(dx) <= halfWidth && Math.Abs(dy) <= halfHeight))
             return new AttackResult();
 
         lobby.LongLivedAttacks.TryRemove(attackId, out _);
