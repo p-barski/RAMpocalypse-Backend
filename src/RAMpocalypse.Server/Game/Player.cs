@@ -63,9 +63,9 @@ public class Player(string id, SpriteData spriteData)
         sin ??= Math.Sin(this.Position.Angle);
         cos ??= Math.Cos(this.Position.Angle);
         var weapon = SubEntities[0];
-        double weaponHalfHeight = weapon.SpriteData.Height * weapon.SpriteData.ScaleFactor / 2;
-        double x = this.Position.X + weapon.Position.X + weaponHalfHeight * sin.Value;
-        double y = this.Position.Y + weapon.Position.Y - weaponHalfHeight * cos.Value;
+        double weaponHeight = weapon.SpriteData.Height * weapon.SpriteData.ScaleFactor;
+        double x = this.Position.X + weapon.Position.X + weaponHeight * sin.Value;
+        double y = this.Position.Y + weapon.Position.Y + weaponHeight / 2 - weaponHeight * cos.Value;
         return new Position(x, y);
     }
 }

@@ -28,24 +28,24 @@ public class PlayerTests
     }
 
     [Fact]
-    public void GetAttackPosition_FacingRight_WeaponRotatesAroundItsOwnCenter()
+    public void GetAttackPosition_FacingRight_WeaponRotatesAroundItsBottomCenter()
     {
         var player = CreatePlayerWithWeapon(Math.PI / 2);
 
         var position = player.GetAttackPosition();
 
-        Assert.Equal(818, position.X, 6);
-        Assert.Equal(500, position.Y, 6);
+        Assert.Equal(977, position.X, 6);
+        Assert.Equal(659, position.Y, 6);
     }
 
     [Fact]
-    public void GetAttackPosition_FacingDown_WeaponRotatesAroundItsOwnCenter()
+    public void GetAttackPosition_FacingDown_WeaponRotatesAroundItsBottomCenter()
     {
         var player = CreatePlayerWithWeapon(Math.PI);
 
         var position = player.GetAttackPosition();
 
         Assert.Equal(659, position.X, 6);
-        Assert.Equal(659, position.Y, 6);
+        Assert.Equal(977, position.Y, 6);
     }
 }

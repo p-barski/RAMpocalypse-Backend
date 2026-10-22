@@ -95,6 +95,6 @@ public class PlayerFactory(ILogger<PlayerFactory> logger, ISpriteInfo spriteInfo
 
     private static Position CalculateWeaponOffset(SpriteData playerSprite, SpriteData weaponSprite)
     {
-        return new(playerSprite.Width * playerSprite.ScaleFactor / 2 - weaponSprite.Width * weaponSprite.ScaleFactor / 2, 0);
+        return new(playerSprite.Width * playerSprite.ScaleFactor / 2 + weaponSprite.Width * weaponSprite.ScaleFactor / 2, -playerSprite.Height * playerSprite.ScaleFactor / 3);
     }
 }

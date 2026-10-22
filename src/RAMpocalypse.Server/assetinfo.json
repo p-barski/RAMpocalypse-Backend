@@ -33,14 +33,14 @@
         "URL": "lightning_1.png",
         "Width": 17,
         "Height": 53,
-        "ScaleFactor": 6.0,
+        "ScaleFactor": 3.0,
         "Type": "Weapon"
       },
       {
         "URL": "lightning_2.png",
         "Width": 72,
         "Height": 124,
-        "ScaleFactor": 2.0,
+        "ScaleFactor": 1.0,
         "Type": "Weapon"
       }
     ]

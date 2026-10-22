@@ -190,8 +190,8 @@ public class PlayerFactoryTests
         var weaponOffsets = players.Select(p => p.SubEntities[0].Position).ToList();
         Assert.All(weaponOffsets, offset =>
         {
-            Assert.Equal(35, offset.X);
-            Assert.Equal(0, offset.Y);
+            Assert.Equal(55, offset.X);
+            Assert.Equal(-20, offset.Y);
             Assert.Equal(0, offset.Angle);
         });
     }

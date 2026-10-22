@@ -16,7 +16,7 @@ public class GameConfig : IGameConfig
     public int ProjectileCooldownMs { get; set; } = 500;
     public int SpecialCooldownMs { get; set; } = 3000;
     public int SharedAttackCooldownMs { get; set; } = 400;
-    public double MeleeRange { get; set; } = 300.0;
+    public double MeleeRange { get; set; } = 150.0;
     public double SpecialAttackRange { get; set; } = 100.0;
     public double ProjectileSpeed { get; set; } = 800.0;
     public double SpecialSpeed { get; set; } = 400.0;
