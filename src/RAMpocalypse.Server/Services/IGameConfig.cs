@@ -16,6 +16,7 @@ public interface IGameConfig
     int ProjectileCooldownMs { get; }
     int SpecialCooldownMs { get; }
     int SharedAttackCooldownMs { get; }
+    int ArmSwitchDurationMs { get; }
     double MeleeRange { get; }
     double SpecialAttackRange { get; }
     double ProjectileSpeed { get; }

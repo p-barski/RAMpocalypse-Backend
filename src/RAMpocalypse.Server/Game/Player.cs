@@ -23,6 +23,7 @@ public class Player(string id, SpriteData spriteData)
     public DateTime LastProjectileAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastSpecialAttackTime { get; set; } = DateTime.MinValue;
     public DateTime LastAnyAttackTime { get; set; } = DateTime.MinValue;
+    public DateTime LastArmSwitchTime { get; set; } = DateTime.MinValue;
     public DateTime DeathTime { get; set; } = DateTime.MinValue;
     public DateTime JoinTime { get; set; } = DateTime.MinValue;
     public DateTime LastDashTime { get; set; } = DateTime.MinValue;
@@ -37,6 +38,7 @@ public class Player(string id, SpriteData spriteData)
         LastProjectileAttackTime = DateTime.MinValue;
         LastSpecialAttackTime = DateTime.MinValue;
         LastAnyAttackTime = DateTime.MinValue;
+        LastArmSwitchTime = DateTime.MinValue;
         DeathTime = DateTime.MinValue;
         JoinTime = DateTime.MinValue;
     }
@@ -57,6 +59,19 @@ public class Player(string id, SpriteData spriteData)
             (corners[2], corners[3]),
             (corners[3], corners[0]),
         ];
+    }
+    public void SetWeaponArmTowardsCenter(int gameWidth)
+    {
+        var weapon = SubEntities.ElementAtOrDefault(0);
+        if (weapon is null) return;
+        var offsetX = Math.Abs(weapon.Position.X);
+        weapon.Position = weapon.Position with { X = Position.X < gameWidth / 2.0 ? offsetX : -offsetX };
+    }
+    public void SwitchWeaponArm()
+    {
+        var weapon = SubEntities.ElementAtOrDefault(0);
+        if (weapon is null) return;
+        weapon.Position = weapon.Position with { X = -weapon.Position.X };
     }
     public Position GetAttackPosition(double? sin = null, double? cos = null)
     {

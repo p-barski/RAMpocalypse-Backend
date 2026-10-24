@@ -44,7 +44,8 @@ public class PlayerFactory(ILogger<PlayerFactory> logger, ISpriteInfo spriteInfo
             else
             {
                 weapon.SpriteData = weaponSprite;
-                weapon.Position = weaponOffset;
+                // Keep the arm chosen at spawn
+                weapon.Position = weapon.Position.X < 0 ? weaponOffset with { X = -weaponOffset.X } : weaponOffset;
             }
         }
     }

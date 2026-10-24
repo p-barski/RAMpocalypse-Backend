@@ -333,4 +333,67 @@ public class GameServiceTests
         var distance = Position.CalculatePointToLineDistanceSquared(origin, a, b);
         Assert.Equal(25.0, distance);
     }
+
+    [Fact]
+    public void SwitchArm_MovesWeaponToOtherArmAndBlocksAttacksUntilFinished()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.MeleeRange.Returns(1000.0);
+        gameConfig.ArmSwitchDurationMs.Returns(500);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, _, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        attacker.SubEntities[0].Position = new Position(10, 0);
+
+        var sut = new GameService(gameConfig, timeProvider);
+        Assert.True(sut.SwitchArm(attacker));
+        Assert.Equal(-10, attacker.SubEntities[0].Position.X);
+
+        timeProvider.SetUtcMilliseconds(1_000_499);
+        Assert.False(sut.SwitchArm(attacker));
+        Assert.False(sut.PerformMeleeAttack(attacker, lobby).Success);
+        Assert.False(sut.PerformProjectileAttack(attacker, lobby).Success);
+        Assert.False(sut.PerformSpecialAttack(attacker, lobby).Success);
+
+        timeProvider.SetUtcMilliseconds(1_000_500);
+        Assert.True(sut.PerformMeleeAttack(attacker, lobby).Success);
+    }
+
+    [Fact]
+    public void SwitchArm_DuringAttack_IsRejected()
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.MeleeRange.Returns(1000.0);
+        gameConfig.SharedAttackCooldownMs.Returns(400);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, _, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        attacker.SubEntities[0].Position = new Position(10, 0);
+
+        var sut = new GameService(gameConfig, timeProvider);
+        Assert.True(sut.PerformMeleeAttack(attacker, lobby).Success);
+        Assert.False(sut.SwitchArm(attacker));
+        Assert.Equal(10, attacker.SubEntities[0].Position.X);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RespawnPlayer_HoldsWeaponInArmFacingArenaCenter(bool initiallyInRightArm)
+    {
+        var gameConfig = Substitute.For<IGameConfig>();
+        gameConfig.GameWidth.Returns(1920);
+        gameConfig.GameHeight.Returns(1080);
+
+        var timeProvider = new TestTimeProvider(1_000_000);
+        var (attacker, _, lobby) = CreateAttackerAndTargetInRange(timeProvider.GetUtcNow().UtcDateTime);
+        attacker.SubEntities[0].Position = new Position(initiallyInRightArm ? 10 : -10, 0);
+        attacker.IsAlive = false;
+
+        var sut = new GameService(gameConfig, timeProvider);
+        var result = sut.RespawnPlayer(attacker, lobby);
+
+        var expectedWeaponX = result.RespawnPosition.X < 960 ? 10 : -10;
+        Assert.Equal(expectedWeaponX, attacker.SubEntities[0].Position.X);
+    }
 }

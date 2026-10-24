@@ -12,6 +12,7 @@
     "ProjectileCooldownMs": 500,
     "SpecialCooldownMs": 3000,
     "SharedAttackCooldownMs": 400,
+    "ArmSwitchDurationMs": 500,
     "MeleeRange": 150,
     "SpecialAttackRange": 100,
     "ProjectileSpeed": 800,

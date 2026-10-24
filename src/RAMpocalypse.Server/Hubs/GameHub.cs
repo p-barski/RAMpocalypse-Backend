@@ -199,6 +199,39 @@ public class GameHub(
         return Task.FromResult(gameService.ValidateDash(player, xVelocity, yVelocity));
     }
 
+    public async Task SwitchArm()
+    {
+        var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (player is null)
+        {
+            logger.LogWarning(
+                "SwitchArm called but player not found - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return;
+        }
+
+        var lobby = lobbyManager.GetLobbyByPlayer(player);
+        if (lobby is null)
+        {
+            logger.LogWarning(
+                "SwitchArm called but player is not in a lobby - ConnectionId: {ConnectionId}",
+                Context.ConnectionId);
+            return;
+        }
+
+        if (!player.IsAlive) return;
+        if (!gameService.SwitchArm(player)) return;
+
+        foreach (var lobbyPlayer in lobby.Players)
+        {
+            var connectionId = playerConnectionService.GetConnectionIdByPlayer(lobbyPlayer);
+            if (connectionId is not null)
+            {
+                await Clients.Client(connectionId).ArmSwitched(player.Id);
+            }
+        }
+    }
+
     public async Task LeaveGame()
     {
         var player = playerConnectionService.GetPlayerByConnectionId(Context.ConnectionId);

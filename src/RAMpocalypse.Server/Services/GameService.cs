@@ -17,6 +17,10 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
     private bool IsSpawnProtected(Player player, DateTime now) =>
         (now - player.JoinTime).TotalMilliseconds < gameConfig.SpawnProtectionMs;
 
+    // Player can't attack while moving the weapon to the other arm
+    private bool IsSwitchingArm(Player player, DateTime now) =>
+        (now - player.LastArmSwitchTime).TotalMilliseconds < gameConfig.ArmSwitchDurationMs;
+
     public PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby)
     {
         var updateTime = timeProvider.GetUtcNow().UtcDateTime;
@@ -89,6 +93,18 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         return true;
     }
 
+    public bool SwitchArm(Player player)
+    {
+        var switchTime = timeProvider.GetUtcNow().UtcDateTime;
+        if (IsSwitchingArm(player, switchTime)) return false;
+        // Not in the middle of an attack
+        if ((switchTime - player.LastAnyAttackTime).TotalMilliseconds < gameConfig.SharedAttackCooldownMs) return false;
+
+        player.LastArmSwitchTime = switchTime;
+        player.SwitchWeaponArm();
+        return true;
+    }
+
     public AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby)
     {
         if (!attacker.IsAlive) return new AttackResult();
@@ -98,6 +114,7 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+        if (IsSwitchingArm(attacker, attackTime)) return new AttackResult();
 
         var timeSinceLastAttack = (attackTime - attacker.LastMeleeAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.MeleeCooldownMs) return new AttackResult();
@@ -173,6 +190,7 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+        if (IsSwitchingArm(attacker, attackTime)) return new AttackResult();
 
         var timeSinceLastAttack = (attackTime - attacker.LastProjectileAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.ProjectileCooldownMs) return new AttackResult();
@@ -211,6 +229,7 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var attackTimeUnixMs = utcNow.ToUnixTimeMilliseconds();
         var timeSinceLastAnyAttack = (attackTime - attacker.LastAnyAttackTime).TotalMilliseconds;
         if (timeSinceLastAnyAttack < gameConfig.SharedAttackCooldownMs) return new AttackResult();
+        if (IsSwitchingArm(attacker, attackTime)) return new AttackResult();
 
         var timeSinceLastAttack = (attackTime - attacker.LastSpecialAttackTime).TotalMilliseconds;
         if (timeSinceLastAttack < gameConfig.SpecialCooldownMs) return new AttackResult();
@@ -378,6 +397,8 @@ public class GameService(IGameConfig gameConfig, TimeProvider timeProvider) : IG
         var (respawnPosition, _) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
 
         player.Position = respawnPosition;
+        player.SetWeaponArmTowardsCenter(gameConfig.GameWidth);
+        player.LastArmSwitchTime = DateTime.MinValue;
         player.Health = player.MaxHealth;
         player.IsAlive = true;
         player.DeathTime = DateTime.MinValue;

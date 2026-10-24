@@ -48,4 +48,28 @@ public class PlayerTests
         Assert.Equal(659, position.X, 6);
         Assert.Equal(977, position.Y, 6);
     }
+
+    [Theory]
+    [InlineData(100, 159)]
+    [InlineData(1800, -159)]
+    public void SetWeaponArmTowardsCenter_HoldsWeaponInArmFacingArenaCenter(double x, double expectedWeaponX)
+    {
+        var player = CreatePlayerWithWeapon(0);
+        player.Position = new Position(x, 500);
+
+        player.SetWeaponArmTowardsCenter(1920);
+
+        Assert.Equal(expectedWeaponX, player.SubEntities[0].Position.X);
+    }
+
+    [Fact]
+    public void SwitchWeaponArm_MirrorsWeaponAndAttackPosition()
+    {
+        var player = CreatePlayerWithWeapon(0);
+
+        player.SwitchWeaponArm();
+
+        Assert.Equal(-159, player.SubEntities[0].Position.X);
+        Assert.Equal(341, player.GetAttackPosition().X, 6);
+    }
 }

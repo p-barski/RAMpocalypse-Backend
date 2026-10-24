@@ -195,4 +195,18 @@ public class PlayerFactoryTests
             Assert.Equal(0, offset.Angle);
         });
     }
+
+    [Fact]
+    public void RandomizePlayersSprites_KeepsWeaponInArmChosenAtSpawn()
+    {
+        SpriteData playerSprite = new("player_1.png", 30, 20, 3.0, SpriteType.Player);
+        SpriteData weaponSprite = new("weapon_1.png", 10, 16, 2.0, SpriteType.Weapon);
+        var sut = CreateFactory([playerSprite], [weaponSprite]);
+        var player = CreateTestPlayer();
+        player.SubEntities[0].Position = new Position(-1, 0);
+
+        sut.RandomizePlayersSprites([player]);
+
+        Assert.Equal(-55, player.SubEntities[0].Position.X);
+    }
 }

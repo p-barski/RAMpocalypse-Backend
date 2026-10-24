@@ -7,6 +7,7 @@ public interface IGameService
 {
     PositionUpdateResult ValidateAndUpdatePosition(Player player, Position newPosition, GameLobby lobby);
     bool ValidateDash(Player player, double xVelocity, double yVelocity);
+    bool SwitchArm(Player player);
     AttackResult PerformMeleeAttack(Player attacker, GameLobby lobby);
     AttackResult PerformProjectileAttack(Player attacker, GameLobby lobby);
     AttackResult PerformSpecialAttack(Player attacker, GameLobby lobby);

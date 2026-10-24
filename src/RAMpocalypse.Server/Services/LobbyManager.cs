@@ -58,6 +58,7 @@ public class LobbyManager(IGameConfig gameConfig, TimeProvider timeProvider) : I
                 {
                     var positions = lobby.Players.Select(p => p.Position);
                     player.Position = Position.GetRandomUnoccupiedCorner(positions, gameWidth, gameHeight, xOffset, yOffset);
+                    player.SetWeaponArmTowardsCenter(gameWidth);
                     player.JoinTime = timeProvider.GetUtcNow().UtcDateTime;
                     lobby.AddPlayer(player);
                     playerToLobbyMap[player] = lobby;

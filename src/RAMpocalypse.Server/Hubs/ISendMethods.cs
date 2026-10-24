@@ -5,6 +5,7 @@ public interface ISendMethods
 {
     Task PlayerDamaged(string playerId, int damage, int health);
     Task AttackPerformed(List<AttackEntity> attackEntities);
+    Task ArmSwitched(string playerId);
     Task PlayerPositionUpdated(string playerId, Position position);
     Task PositionCorrected(Position correctedPosition);
     Task LobbyStarted(string lobbyId, List<Player> players);

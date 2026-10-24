@@ -45,6 +45,8 @@ public class MatchmakingService(
             var (corner1, corner2) = Position.GetRandomOppositeCorners(gameConfig.GameWidth, gameConfig.GameHeight, xOffset, yOffset);
             player.Position = corner1;
             otherPlayer.Position = corner2;
+            player.SetWeaponArmTowardsCenter(gameConfig.GameWidth);
+            otherPlayer.SetWeaponArmTowardsCenter(gameConfig.GameWidth);
             var lobby = lobbyManager.CreateLobby(player, otherPlayer);
             return new MatchmakingResult
             {
